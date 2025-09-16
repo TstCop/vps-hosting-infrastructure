@@ -1,0 +1,375 @@
+---
+# Shared Infrastructure Configuration
+# Common configuration for all VPS instances in the hosting infrastructure
+
+# Network Configuration
+network:
+  # Production subnet
+  production:
+    subnet: "136.243.208.128/29"
+    gateway: "136.243.208.129"
+    netmask: "255.255.255.248"
+    broadcast: "136.243.208.135"
+
+    # IP allocations
+    ips:
+      gateway: "136.243.208.129"
+      gitlab_vps: "136.243.208.130"
+      nginx_app_vps: "136.243.208.131"
+      reserved_1: "136.243.208.132"  # Future expansion
+      reserved_2: "136.243.208.133"  # Future expansion
+      reserved_3: "136.243.208.134"  # Future expansion
+      broadcast: "136.243.208.135"
+
+  # Private network for inter-VPS communication
+  private:
+    subnet: "10.0.0.0/24"
+    gateway: "10.0.0.1"
+    netmask: "255.255.255.0"
+    broadcast: "10.0.0.255"
+
+    # Private IP allocations
+    ips:
+      gateway: "10.0.0.1"
+      gitlab_vps: "10.0.0.10"
+      nginx_app_vps: "10.0.0.20"
+      monitoring: "10.0.0.30"      # Future monitoring server
+      backup: "10.0.0.40"          # Future backup server
+      load_balancer: "10.0.0.50"   # Future load balancer
+
+  # DNS configuration
+  dns:
+    primary: "8.8.8.8"
+    secondary: "8.8.4.4"
+    tertiary: "1.1.1.1"
+    search_domains:
+      - "vps.local"
+      - "infra.local"
+
+# Security Configuration
+security:
+  # SSH configuration
+  ssh:
+    port: 22
+    permit_root_login: false
+    password_authentication: false
+    pubkey_authentication: true
+    max_auth_tries: 3
+    client_alive_interval: 300
+    client_alive_count_max: 2
+    protocol: 2
+    x11_forwarding: false
+    allow_tcp_forwarding: false
+
+  # Firewall default rules
+  firewall:
+    default_input_policy: "DROP"
+    default_forward_policy: "DROP"
+    default_output_policy: "ACCEPT"
+
+    # Common allowed ports
+    common_rules:
+      - port: 22
+        protocol: "tcp"
+        source: "any"
+        description: "SSH access"
+      - port: 80
+        protocol: "tcp"
+        source: "any"
+        description: "HTTP traffic"
+      - port: 443
+        protocol: "tcp"
+        source: "any"
+        description: "HTTPS traffic"
+      - protocol: "icmp"
+        icmp_type: "echo-request"
+        source: "any"
+        description: "ICMP ping"
+
+    # Private network rules
+    private_rules:
+      - source: "10.0.0.0/24"
+        destination: "10.0.0.0/24"
+        action: "ACCEPT"
+        description: "Inter-VPS communication"
+
+  # Fail2ban configuration
+  fail2ban:
+    enabled: true
+    ban_time: 3600
+    find_time: 600
+    max_retry: 3
+    backend: "systemd"
+
+    jails:
+      sshd:
+        enabled: true
+        port: 22
+        filter: "sshd"
+        logpath: "/var/log/auth.log"
+        max_retry: 3
+
+      nginx_http_auth:
+        enabled: true
+        port: "http,https"
+        filter: "nginx-http-auth"
+        logpath: "/var/log/nginx/error.log"
+        max_retry: 6
+
+# SSL/TLS Configuration
+ssl:
+  # Modern SSL configuration
+  protocols: "TLSv1.2 TLSv1.3"
+  ciphers: >-
+    ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:
+    ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384
+
+  # Certificate settings
+  key_size: 2048
+  auto_renew: true
+  renew_days_before_expiry: 30
+
+  # Let's Encrypt configuration
+  letsencrypt:
+    email: "admin@vps.local"  # Replace with actual email
+    challenge_type: "http-01"
+    test_mode: false
+
+  # HSTS settings
+  hsts:
+    enabled: true
+    max_age: 31536000
+    include_subdomains: true
+    preload: true
+
+# Monitoring Configuration
+monitoring:
+  # System monitoring
+  netdata:
+    enabled: true
+    port: 19999
+    bind_to: "127.0.0.1"
+    access_from:
+      - "127.0.0.1"
+      - "10.0.0.0/24"
+
+  # Metrics collection
+  node_exporter:
+    enabled: true
+    port: 9100
+    metrics_path: "/metrics"
+
+  # Log aggregation
+  promtail:
+    enabled: true
+    port: 9080
+
+  # Health checks
+  health_checks:
+    enabled: true
+    interval: 300  # 5 minutes
+    timeout: 30
+    retries: 3
+
+    endpoints:
+      - name: "system_health"
+        url: "/health"
+        expected_status: 200
+      - name: "disk_usage"
+        threshold: 85
+        type: "disk"
+      - name: "memory_usage"
+        threshold: 85
+        type: "memory"
+      - name: "load_average"
+        threshold: 4.0
+        type: "load"
+
+# Backup Configuration
+backup:
+  # Backup schedule
+  schedule:
+    daily: "0 2 * * *"    # 2 AM daily
+    weekly: "0 3 * * 0"   # 3 AM Sunday
+    monthly: "0 4 1 * *"  # 4 AM 1st of month
+
+  # Retention policy
+  retention:
+    daily: 7
+    weekly: 4
+    monthly: 12
+    yearly: 2
+
+  # Backup destinations
+  destinations:
+    local:
+      enabled: true
+      path: "/backup/local"
+    remote:
+      enabled: true
+      host: "10.0.0.10"  # GitLab VPS as backup server
+      path: "/backup/remote"
+      user: "backup"
+
+  # Compression
+  compression:
+    enabled: true
+    level: 6
+    format: "gzip"
+
+# Logging Configuration
+logging:
+  # Log levels
+  level: "info"
+  format: "json"
+
+  # Log rotation
+  rotation:
+    enabled: true
+    max_size: "100M"
+    max_files: 10
+    compress: true
+
+  # Centralized logging
+  centralized:
+    enabled: true
+    server: "10.0.0.10"  # GitLab VPS as log server
+    port: 514
+    protocol: "udp"
+
+  # Log files
+  files:
+    system: "/var/log/syslog"
+    auth: "/var/log/auth.log"
+    nginx: "/var/log/nginx/*.log"
+    application: "/var/log/app/*.log"
+
+# Service Configuration
+services:
+  # Common services for all VPS instances
+  common:
+    - name: "ufw"
+      enabled: true
+      description: "Uncomplicated Firewall"
+    - name: "fail2ban"
+      enabled: true
+      description: "Intrusion prevention"
+    - name: "netdata"
+      enabled: true
+      description: "System monitoring"
+    - name: "logrotate"
+      enabled: true
+      description: "Log rotation"
+    - name: "cron"
+      enabled: true
+      description: "Scheduled tasks"
+
+  # Optional services
+  optional:
+    - name: "docker"
+      enabled_on:
+        - "nginx-app-vps"
+      description: "Container platform"
+    - name: "postgresql"
+      enabled_on:
+        - "gitlab-vps"
+      description: "Database server"
+    - name: "redis"
+      enabled_on:
+        - "gitlab-vps"
+        - "nginx-app-vps"
+      description: "In-memory data store"
+
+# System Configuration
+system:
+  # Timezone
+  timezone: "UTC"
+
+  # Locale
+  locale: "en_US.UTF-8"
+
+  # Kernel parameters
+  kernel_params:
+    # Network optimization
+    net.core.rmem_max: 16777216
+    net.core.wmem_max: 16777216
+    net.ipv4.tcp_rmem: "4096 65536 16777216"
+    net.ipv4.tcp_wmem: "4096 65536 16777216"
+    net.core.netdev_max_backlog: 5000
+
+    # Security
+    net.ipv4.conf.all.send_redirects: 0
+    net.ipv4.conf.all.accept_redirects: 0
+    net.ipv4.conf.all.accept_source_route: 0
+    net.ipv4.conf.all.log_martians: 1
+    net.ipv4.tcp_syncookies: 1
+
+    # Performance
+    vm.swappiness: 10
+    vm.dirty_ratio: 15
+    vm.dirty_background_ratio: 5
+
+  # Package repositories
+  repositories:
+    - name: "ubuntu"
+      enabled: true
+      components: ["main", "restricted", "universe", "multiverse"]
+    - name: "ubuntu-security"
+      enabled: true
+      components: ["main", "restricted", "universe", "multiverse"]
+    - name: "ubuntu-updates"
+      enabled: true
+      components: ["main", "restricted", "universe", "multiverse"]
+
+# Environment Configuration
+environment:
+  # Development settings
+  development:
+    debug: true
+    log_level: "debug"
+    ssl_verify: false
+    monitoring_interval: 60
+
+  # Production settings
+  production:
+    debug: false
+    log_level: "info"
+    ssl_verify: true
+    monitoring_interval: 300
+
+    # Performance settings
+    max_connections: 1000
+    worker_processes: "auto"
+    keepalive_timeout: 65
+
+    # Security settings
+    server_tokens: false
+    hide_version: true
+    rate_limit: true
+
+# Integration Configuration
+integration:
+  # GitLab integration
+  gitlab:
+    api_url: "https://gitlab.vps.local/api/v4"
+    registry_url: "registry.gitlab.vps.local:5050"
+
+  # Container registry
+  registry:
+    host: "registry.gitlab.vps.local"
+    port: 5050
+    ssl: true
+
+  # Database connections
+  database:
+    host: "10.0.0.10"
+    port: 5432
+    ssl_mode: "require"
+    connection_pool: 20
+
+  # Redis connections
+  cache:
+    host: "10.0.0.10"
+    port: 6379
+    database: 0
+    connection_pool: 10

@@ -1,0 +1,264 @@
+---
+# Network Configuration for Nginx App VPS
+# Production network settings for reverse proxy and applications
+
+# Basic Network Information
+hostname: "nginx-app-vps"
+domain: "app.vps.local"
+fqdn: "nginx-app-vps.app.vps.local"
+
+# Interface Configuration
+interfaces:
+  # Public network interface
+  public:
+    name: "enp1s0"
+    type: "static"
+    address: "136.243.208.131"
+    netmask: "255.255.255.248"
+    network: "136.243.208.128"
+    broadcast: "136.243.208.135"
+    gateway: "136.243.208.129"
+    dns_nameservers:
+      - "8.8.8.8"
+      - "8.8.4.4"
+      - "1.1.1.1"
+    dns_search:
+      - "vps.local"
+    mtu: 1500
+
+  # Private network interface
+  private:
+    name: "enp2s0"
+    type: "static"
+    address: "10.0.0.20"
+    netmask: "255.255.255.0"
+    network: "10.0.0.0"
+    broadcast: "10.0.0.255"
+    mtu: 1500
+
+# Routing Configuration
+routes:
+  # Default route via public gateway
+  - destination: "0.0.0.0/0"
+    gateway: "136.243.208.129"
+    interface: "enp1s0"
+    metric: 100
+
+  # Private network route
+  - destination: "10.0.0.0/24"
+    gateway: "10.0.0.1"
+    interface: "enp2s0"
+    metric: 200
+
+  # GitLab VPS direct route
+  - destination: "10.0.0.10/32"
+    gateway: "10.0.0.1"
+    interface: "enp2s0"
+    metric: 50
+
+# Hosts Configuration
+hosts:
+  # Local system
+  - ip: "127.0.0.1"
+    hostnames: ["localhost", "nginx-app-vps"]
+
+  # IPv6 localhost
+  - ip: "::1"
+    hostnames: ["localhost", "ip6-localhost", "ip6-loopback"]
+
+  # GitLab VPS
+  - ip: "10.0.0.10"
+    hostnames: ["gitlab-vps", "gitlab.vps.local", "registry.gitlab.vps.local"]
+
+  # Self reference
+  - ip: "10.0.0.20"
+    hostnames: ["nginx-app-vps", "app.vps.local", "api.app.vps.local"]
+
+# Firewall Rules
+firewall:
+  enabled: true
+  default_input_policy: "DROP"
+  default_forward_policy: "DROP"
+  default_output_policy: "ACCEPT"
+
+  # Input rules
+  input_rules:
+    # Allow loopback
+    - interface: "lo"
+      action: "ACCEPT"
+      comment: "Allow loopback traffic"
+
+    # Allow established connections
+    - state: "ESTABLISHED,RELATED"
+      action: "ACCEPT"
+      comment: "Allow established connections"
+
+    # SSH access
+    - port: 22
+      protocol: "tcp"
+      source: "any"
+      action: "ACCEPT"
+      comment: "SSH access"
+
+    # HTTP traffic
+    - port: 80
+      protocol: "tcp"
+      source: "any"
+      action: "ACCEPT"
+      comment: "HTTP traffic"
+
+    # HTTPS traffic
+    - port: 443
+      protocol: "tcp"
+      source: "any"
+      action: "ACCEPT"
+      comment: "HTTPS traffic"
+
+    # Node.js app (internal only)
+    - port: 3000
+      protocol: "tcp"
+      source: "10.0.0.0/24"
+      action: "ACCEPT"
+      comment: "Node.js application internal access"
+
+    # API (internal only)
+    - port: 8080
+      protocol: "tcp"
+      source: "10.0.0.0/24"
+      action: "ACCEPT"
+      comment: "API internal access"
+
+    # Monitoring (local only)
+    - port: 9100
+      protocol: "tcp"
+      source: "127.0.0.1"
+      action: "ACCEPT"
+      comment: "Node exporter local access"
+
+    # ICMP ping
+    - protocol: "icmp"
+      icmp_type: "echo-request"
+      source: "any"
+      action: "ACCEPT"
+      comment: "Allow ping"
+
+  # Output rules (less restrictive for outbound)
+  output_rules:
+    # Allow all outbound by default
+    - action: "ACCEPT"
+      comment: "Allow all outbound traffic"
+
+# Network Security
+security:
+  # Disable IPv6 if not needed
+  ipv6_disabled: true
+
+  # IP forwarding (disabled for security)
+  ip_forward: false
+
+  # SYN flood protection
+  tcp_syncookies: true
+
+  # Ignore ICMP redirects
+  ignore_icmp_redirects: true
+
+  # Ignore source route packets
+  ignore_source_route: true
+
+  # Log suspicious packets
+  log_martians: true
+
+  # Reverse path filtering
+  rp_filter: 1
+
+# Load Balancing (if multiple app instances)
+load_balancing:
+  enabled: false
+  method: "round_robin"
+  backends:
+    - name: "app1"
+      address: "127.0.0.1:3000"
+      weight: 1
+      health_check: "/health"
+
+    - name: "app2"
+      address: "127.0.0.1:3001"
+      weight: 1
+      health_check: "/health"
+
+# SSL/TLS Configuration
+ssl:
+  # Redirect HTTP to HTTPS
+  force_https: true
+
+  # HSTS settings
+  hsts:
+    enabled: true
+    max_age: 31536000
+    include_subdomains: true
+    preload: true
+
+  # SSL protocols and ciphers
+  protocols: "TLSv1.2 TLSv1.3"
+  ciphers: >-
+    ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:
+    ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384
+
+  # OCSP stapling
+  ocsp_stapling: true
+
+# Rate Limiting
+rate_limiting:
+  enabled: true
+
+  # General rate limits
+  global:
+    requests_per_second: 10
+    burst: 20
+
+  # API rate limits
+  api:
+    requests_per_second: 5
+    burst: 10
+
+  # Login rate limits
+  auth:
+    requests_per_minute: 5
+    burst: 10
+
+# Monitoring and Logging
+monitoring:
+  # Network interface monitoring
+  interfaces:
+    - "enp1s0"
+    - "enp2s0"
+    - "lo"
+
+  # Connection tracking
+  conntrack:
+    enabled: true
+    max_connections: 16384
+
+  # Bandwidth monitoring
+  bandwidth:
+    enabled: true
+    warning_threshold: "80%"
+    critical_threshold: "95%"
+
+# Quality of Service (QoS)
+qos:
+  enabled: false
+
+  # Traffic classes
+  classes:
+    - name: "high_priority"
+      bandwidth: "50%"
+      protocols: ["ssh", "https"]
+
+    - name: "normal"
+      bandwidth: "40%"
+      protocols: ["http"]
+
+    - name: "low_priority"
+      bandwidth: "10%"
+      protocols: ["ftp", "smtp"]

@@ -1,0 +1,209 @@
+---
+# Nginx/App VPS Configuration
+# Production environment configuration for reverse proxy and application server
+
+# Server Information
+server_name: "nginx-app-vps"
+domain: "app.vps.local"  # Replace with actual domain
+environment: "production"
+
+# Hardware Specifications
+hardware:
+  memory: "2048"     # 2GB RAM
+  cpus: 2            # 2 CPU cores
+  storage: "50G"     # 50GB+ storage
+
+# Network Configuration
+network:
+  public_ip: "136.243.208.131"
+  private_ip: "10.0.0.20"
+  netmask: "255.255.255.248"
+  gateway: "136.243.208.129"
+  dns_servers:
+    - "8.8.8.8"
+    - "8.8.4.4"
+    - "1.1.1.1"
+
+# Port Configuration
+ports:
+  http: 80
+  https: 443
+  ssh: 22
+  nodejs: 3000
+  nodejs_dev: 3001
+  api: 8080
+  monitoring: 9090
+
+# Nginx Configuration
+nginx:
+  version: "latest"
+  user: "nginx"
+  worker_processes: "auto"
+  worker_connections: 1024
+  client_max_body_size: "100M"
+  proxy_timeout: 60
+  ssl_protocols: "TLSv1.2 TLSv1.3"
+  ssl_ciphers: >-
+    ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:
+    ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384
+
+  # Virtual Hosts
+  vhosts:
+    - name: "default"
+      listen: 80
+      server_name: "_"
+      root: "/var/www/html"
+      index: "index.html"
+
+    - name: "app"
+      listen: 443
+      server_name: "{{ domain }}"
+      ssl: true
+      ssl_certificate: "/etc/letsencrypt/live/{{ domain }}/fullchain.pem"
+      ssl_certificate_key: "/etc/letsencrypt/live/{{ domain }}/privkey.pem"
+      proxy_pass: "http://127.0.0.1:3000"
+
+    - name: "api"
+      listen: 443
+      server_name: "api.{{ domain }}"
+      ssl: true
+      ssl_certificate: "/etc/letsencrypt/live/{{ domain }}/fullchain.pem"
+      ssl_certificate_key: "/etc/letsencrypt/live/{{ domain }}/privkey.pem"
+      proxy_pass: "http://127.0.0.1:8080"
+
+# Node.js Configuration
+nodejs:
+  version: "18"      # LTS version
+  npm_version: "latest"
+  global_packages:
+    - "pm2"
+    - "nodemon"
+    - "typescript"
+    - "@types/node"
+  pm2:
+    instances: 2
+    exec_mode: "cluster"
+    max_memory_restart: "500M"
+    log_date_format: "YYYY-MM-DD HH:mm Z"
+
+# Docker Configuration
+docker:
+  version: "24.0"
+  compose_version: "2.20"
+  registry: "registry.gitlab.vps.local:5050"  # GitLab Container Registry
+  network: "app-network"
+  storage_driver: "overlay2"
+
+# Application Configuration
+application:
+  name: "vps-hosting-app"
+  version: "1.0.0"
+  port: 3000
+  env: "production"
+  log_level: "info"
+
+  # Database connection (if needed)
+  database:
+    host: "10.0.0.10"     # GitLab VPS private IP for PostgreSQL
+    port: 5432
+    name: "app_production"
+    user: "app_user"
+    ssl: true
+
+  # Redis connection (if needed)
+  redis:
+    host: "10.0.0.10"     # GitLab VPS private IP
+    port: 6379
+    database: 0
+
+# SSL/TLS Configuration
+ssl:
+  enabled: true
+  provider: "letsencrypt"
+  email: "admin@vps.local"  # Replace with actual email
+  auto_renew: true
+  challenge_type: "http-01"
+  key_size: 2048
+
+  # Certificates
+  certificates:
+    - domain: "{{ domain }}"
+      alt_names:
+        - "www.{{ domain }}"
+        - "api.{{ domain }}"
+
+# Security Configuration
+security:
+  firewall:
+    enabled: true
+    default_policy: "deny"
+    rules:
+      - {port: 22, protocol: "tcp", source: "any", action: "allow"}      # SSH
+      - {port: 80, protocol: "tcp", source: "any", action: "allow"}      # HTTP
+      - {port: 443, protocol: "tcp", source: "any", action: "allow"}     # HTTPS
+      - {port: 3000, protocol: "tcp", source: "10.0.0.0/24", action: "allow"}  # Node.js internal
+
+  fail2ban:
+    enabled: true
+    jails:
+      - "nginx-http-auth"
+      - "nginx-limit-req"
+      - "nginx-botsearch"
+      - "sshd"
+
+  ssh:
+    port: 22
+    permit_root_login: false
+    password_authentication: false
+    pubkey_authentication: true
+    max_auth_tries: 3
+    client_alive_interval: 300
+
+# Monitoring Configuration
+monitoring:
+  enabled: true
+  tools:
+    - "netdata"
+    - "node_exporter"
+  endpoints:
+    netdata: "http://127.0.0.1:19999"
+    node_exporter: "http://127.0.0.1:9100"
+
+# Backup Configuration
+backup:
+  enabled: true
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  retention_days: 30
+  destinations:
+    - type: "local"
+      path: "/backup/nginx-app"
+    - type: "remote"
+      host: "10.0.0.10"   # GitLab VPS
+      path: "/backup/remote/nginx-app"
+  targets:
+    - "/etc/nginx"
+    - "/var/www"
+    - "/home/vagrant/app"
+    - "/etc/letsencrypt"
+
+# Log Configuration
+logging:
+  level: "info"
+  format: "json"
+  rotate: true
+  max_size: "100M"
+  max_files: 10
+
+  # Log files
+  files:
+    nginx_access: "/var/log/nginx/access.log"
+    nginx_error: "/var/log/nginx/error.log"
+    app: "/var/log/app/application.log"
+    pm2: "/home/vagrant/.pm2/logs"
+
+# Maintenance Configuration
+maintenance:
+  enabled: true
+  window: "02:00-04:00"  # 2 AM to 4 AM
+  auto_update: false     # Manual updates only
+  reboot_required: false

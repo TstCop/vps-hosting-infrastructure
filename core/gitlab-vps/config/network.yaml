@@ -1,0 +1,157 @@
+---
+# Network Configuration for GitLab VPS
+# File: /opt/xcloud/vps-hosting-infrastructure/core/gitlab-vps/config/network.yaml
+
+network:
+  # Production network configuration
+  production:
+    # Public interface configuration
+    public:
+      interface: "eth0"
+      ip_address: "136.243.208.130"
+      netmask: "255.255.255.248"
+      gateway: "136.243.208.129"
+      broadcast: "136.243.208.135"
+      network: "136.243.208.128"
+      dns_nameservers:
+        - "8.8.8.8"
+        - "8.8.4.4"
+        - "1.1.1.1"
+        - "9.9.9.9"
+      dns_search: "xcloud.local"
+
+    # Private interface configuration
+    private:
+      interface: "eth1"
+      ip_address: "10.0.0.10"
+      netmask: "255.255.255.0"
+      network: "10.0.0.0"
+      broadcast: "10.0.0.255"
+
+  # Development/testing network
+  development:
+    # For Vagrant port forwarding
+    forwarded_ports:
+      - guest: 80
+        host: 8080
+        protocol: "tcp"
+      - guest: 443
+        host: 8443
+        protocol: "tcp"
+      - guest: 22
+        host: 2222
+        protocol: "tcp"
+      - guest: 5050  # Container Registry
+        host: 5050
+        protocol: "tcp"
+
+  # Network services configuration
+  services:
+    # Firewall rules (UFW)
+    firewall:
+      default_incoming: "deny"
+      default_outgoing: "allow"
+      default_forward: "deny"
+
+      rules:
+        # SSH access
+        - port: 22
+          protocol: "tcp"
+          action: "allow"
+          comment: "SSH access"
+
+        # HTTP/HTTPS for GitLab web interface
+        - port: 80
+          protocol: "tcp"
+          action: "allow"
+          comment: "HTTP GitLab web"
+        - port: 443
+          protocol: "tcp"
+          action: "allow"
+          comment: "HTTPS GitLab web"
+
+        # GitLab SSH (custom port)
+        - port: 2222
+          protocol: "tcp"
+          action: "allow"
+          comment: "GitLab SSH"
+
+        # Container Registry
+        - port: 5050
+          protocol: "tcp"
+          action: "allow"
+          comment: "Docker Registry"
+
+        # Internal communication (private network)
+        - from: "10.0.0.0/24"
+          action: "allow"
+          comment: "Private network access"
+
+    # DNS configuration
+    dns:
+      # Local DNS resolution
+      hosts:
+        - ip: "10.0.0.10"
+          hostname: "gitlab-vps.internal"
+        - ip: "10.0.0.20"
+          hostname: "nginx-app-vps.internal"
+        - ip: "136.243.208.130"
+          hostname: "gitlab.xcloud.local"
+        - ip: "136.243.208.131"
+          hostname: "app.xcloud.local"
+
+  # Network monitoring
+  monitoring:
+    # Interfaces to monitor
+    interfaces:
+      - "eth0"   # Public interface
+      - "eth1"   # Private interface
+      - "lo"     # Loopback
+
+    # Network metrics to collect
+    metrics:
+      - "bandwidth_usage"
+      - "packet_loss"
+      - "latency"
+      - "connection_count"
+      - "error_rate"
+
+  # Traffic shaping (if needed)
+  traffic_control:
+    enabled: false
+    # Rate limiting for different services
+    rules:
+      - interface: "eth0"
+        direction: "ingress"
+        rate_limit: "100mbit"
+        burst: "10mb"
+
+  # Security settings
+  security:
+    # Disable unnecessary network services
+    disabled_services:
+      - "avahi-daemon"      # Zero-configuration networking
+      - "bluetooth"         # Bluetooth service
+      - "cups"             # Printing service
+
+    # Network-based intrusion detection
+    fail2ban:
+      enabled: true
+      jails:
+        - name: "sshd"
+          enabled: true
+          port: "ssh"
+          filter: "sshd"
+          logpath: "/var/log/auth.log"
+          maxretry: 3
+          bantime: 3600      # 1 hour
+          findtime: 600      # 10 minutes
+
+        - name: "gitlab"
+          enabled: true
+          port: "http,https"
+          filter: "gitlab"
+          logpath: "/var/log/gitlab/gitlab-rails/application.log"
+          maxretry: 5
+          bantime: 1800      # 30 minutes
+          findtime: 300      # 5 minutes

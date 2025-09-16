@@ -1,0 +1,147 @@
+---
+# SSL/TLS Configuration for GitLab VPS
+# File: /opt/xcloud/vps-hosting-infrastructure/core/gitlab-vps/config/ssl.yaml
+
+ssl:
+  # Certificate configuration
+  certificates:
+    # Main GitLab certificate
+    gitlab:
+      # Certificate paths
+      certificate_path: "/etc/ssl/certs/gitlab.crt"
+      private_key_path: "/etc/ssl/private/gitlab.key"
+      certificate_chain_path: "/etc/ssl/certs/gitlab-chain.crt"
+      ca_certificate_path: "/etc/ssl/certs/ca.crt"
+
+      # Certificate details
+      common_name: "gitlab.xcloud.local"
+      subject_alt_names:
+        - "136.243.208.130"
+        - "gitlab-vps.internal"
+        - "localhost"
+
+      # Certificate validity
+      validity_days: 365
+      key_size: 4096
+      key_algorithm: "RSA"
+
+    # Container Registry certificate
+    registry:
+      certificate_path: "/etc/ssl/certs/registry.crt"
+      private_key_path: "/etc/ssl/private/registry.key"
+      common_name: "registry.xcloud.local"
+      subject_alt_names:
+        - "136.243.208.130:5050"
+        - "registry-vps.internal"
+      validity_days: 365
+      key_size: 4096
+
+  # Let's Encrypt configuration
+  letsencrypt:
+    enabled: true
+    email: "admin@xcloud.local"
+
+    # Domains to secure
+    domains:
+      - "gitlab.xcloud.local"
+      - "registry.xcloud.local"
+
+    # Challenge method
+    challenge_method: "http-01"  # or "dns-01" for DNS challenge
+    webroot_path: "/var/www/letsencrypt"
+
+    # Renewal settings
+    auto_renew: true
+    renew_days_before_expiry: 30
+
+    # Post-renewal hooks
+    renewal_hooks:
+      - "systemctl reload nginx"
+      - "gitlab-ctl restart nginx"
+
+  # SSL/TLS Security Configuration
+  security:
+    # TLS versions
+    min_tls_version: "1.2"
+    max_tls_version: "1.3"
+
+    # Cipher suites (Mozilla Modern configuration)
+    cipher_suites:
+      # TLS 1.3 ciphers
+      - "TLS_AES_128_GCM_SHA256"
+      - "TLS_AES_256_GCM_SHA384"
+      - "TLS_CHACHA20_POLY1305_SHA256"
+
+      # TLS 1.2 ciphers
+      - "ECDHE-ECDSA-AES128-GCM-SHA256"
+      - "ECDHE-RSA-AES128-GCM-SHA256"
+      - "ECDHE-ECDSA-AES256-GCM-SHA384"
+      - "ECDHE-RSA-AES256-GCM-SHA384"
+      - "ECDHE-ECDSA-CHACHA20-POLY1305"
+      - "ECDHE-RSA-CHACHA20-POLY1305"
+
+    # Key exchange
+    ecdh_curve: "X25519:prime256v1:secp384r1"
+
+    # Security headers
+    security_headers:
+      strict_transport_security:
+        enabled: true
+        max_age: 31536000        # 1 year
+        include_subdomains: true
+        preload: true
+
+      content_security_policy:
+        enabled: true
+        policy: >-
+          default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval';
+          style-src 'self' 'unsafe-inline'; img-src 'self' data: https:;
+          font-src 'self' data:; connect-src 'self'; frame-ancestors 'self';
+
+      x_frame_options: "SAMEORIGIN"
+      x_content_type_options: "nosniff"
+      x_xss_protection: "1; mode=block"
+      referrer_policy: "strict-origin-when-cross-origin"
+
+  # OCSP Configuration
+  ocsp:
+    enabled: true
+    stapling: true
+    stapling_verify: true
+    resolver: "8.8.8.8"
+    resolver_timeout: "5s"
+
+  # SSL Monitoring
+  monitoring:
+    # Certificate expiry monitoring
+    certificate_expiry_check: true
+    warning_days: 30      # Alert when certificate expires in 30 days
+    critical_days: 7      # Critical alert when certificate expires in 7 days
+
+    # SSL Labs grade monitoring
+    ssl_labs_check: true
+    minimum_grade: "A"    # Minimum acceptable SSL Labs grade
+
+    # Certificate chain validation
+    chain_validation: true
+
+  # Development/Testing SSL Configuration
+  development:
+    # Self-signed certificates for development
+    self_signed:
+      enabled: true
+      certificate_path: "/etc/ssl/certs/gitlab-dev.crt"
+      private_key_path: "/etc/ssl/private/gitlab-dev.key"
+
+    # Skip SSL verification for development
+    skip_verification: false  # Set to true only in development
+
+  # Backup SSL Configuration
+  backup:
+    # Backup certificate and key files
+    backup_certificates: true
+    backup_path: "/var/opt/gitlab/backups/ssl"
+    backup_retention_days: 90
+
+    # Include in GitLab backup
+    include_in_gitlab_backup: true

@@ -1,0 +1,129 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# GitLab VPS Production Vagrantfile
+# IP Público: 136.243.208.130
+# IP Privado: 10.0.0.10
+
+Vagrant.configure("2") do |config|
+  # Box configuration
+  config.vm.box = "generic/ubuntu2204"  # Ubuntu 22.04 LTS with libvirt support
+  config.vm.box_check_update = true
+
+  # VM definition
+  config.vm.define "gitlab-vps" do |gitlab|
+    gitlab.vm.hostname = "gitlab-vps"
+
+    # Network configuration
+    # Public IP for production (using host interface)
+    config.vm.network "public_network",
+      ip: "136.243.208.130",
+      netmask: "255.255.255.248",
+      dev: "enp35s0"
+
+    # Private network for internal communication
+    config.vm.network "private_network",
+      ip: "10.0.0.10",
+      netmask: "255.255.255.0"
+
+    # Port forwarding for development/testing
+    config.vm.network "forwarded_port", guest: 80, host: 8080, auto_correct: true
+    gitlab.vm.network "forwarded_port", guest: 443, host: 8443, auto_correct: true
+    gitlab.vm.network "forwarded_port", guest: 22, host: 2222, auto_correct: true
+
+    # Provider-specific configuration
+    gitlab.vm.provider "libvirt" do |lv|
+      lv.memory = 4096           # 4GB RAM for GitLab
+      lv.cpus = 2                # 2+ CPUs
+      lv.storage :file,
+        size: "100G",            # 100GB+ Storage
+        type: "qcow2"
+      lv.machine_virtual_size = 100  # Virtual disk size
+      lv.disk_bus = "virtio"
+      lv.disk_driver :cache => "none"  # Fixed deprecated volume_cache
+      lv.nic_model_type = "virtio"
+      lv.video_type = "qxl"
+      lv.cpu_mode = "host-passthrough"
+      lv.nested = true
+      lv.driver = "kvm"
+    end
+
+    # Synced folders
+    gitlab.vm.synced_folder "./config", "/vagrant/config", type: "rsync",
+      rsync__args: ["--verbose", "--archive", "--delete", "-z"]
+    gitlab.vm.synced_folder "./scripts", "/vagrant/scripts", type: "rsync",
+      rsync__args: ["--verbose", "--archive", "--delete", "-z"]
+
+    # Provisioning scripts execution order
+    gitlab.vm.provision "shell", name: "Update System", inline: <<-SHELL
+      export DEBIAN_FRONTEND=noninteractive
+      apt-get update
+      apt-get upgrade -y
+    SHELL
+
+    gitlab.vm.provision "shell", name: "Basic Setup",
+      path: "scripts/provision-gitlab.sh",
+      privileged: true
+
+    gitlab.vm.provision "shell", name: "Install GitLab",
+      path: "scripts/install-gitlab.sh",
+      privileged: true
+
+    gitlab.vm.provision "shell", name: "Configure Runner",
+      path: "scripts/configure-runner.sh",
+      privileged: true
+
+    gitlab.vm.provision "shell", name: "Setup SSL",
+      path: "scripts/setup-ssl.sh",
+      privileged: true
+
+    gitlab.vm.provision "shell", name: "Setup Backup",
+      path: "scripts/backup-setup.sh",
+      privileged: true
+
+    # Post-provision message
+    gitlab.vm.post_up_message = <<-MSG
+    ===============================================
+    🚀 GitLab VPS está pronto!
+
+    🌐 URLs de Acesso:
+    - GitLab Web: https://136.243.208.130
+    - GitLab Web (Dev): http://localhost:8080
+    - GitLab SSH: git@136.243.208.130:2222
+
+    🔐 Credenciais:
+    - Usuário: root
+    - Senha: consulte /opt/gitlab/embedded/service/gitlab-rails/
+
+    📊 Recursos:
+    - RAM: 4GB
+    - CPU: 2 cores
+    - Storage: 100GB
+    - IP Público: 136.243.208.130
+    - IP Privado: 10.0.0.10
+
+    🔧 Comandos úteis:
+    vagrant ssh gitlab-vps
+    sudo gitlab-ctl status
+    sudo gitlab-ctl tail
+    ===============================================
+    MSG
+  end
+
+  # Global configurations
+  config.ssh.forward_agent = true
+  config.ssh.forward_x11 = true
+  config.ssh.insert_key = false
+
+  # Vagrant plugins requirements
+  config.vagrant.plugins = ["vagrant-libvirt", "vagrant-hostmanager"]
+
+  # Host manager configuration
+  if Vagrant.has_plugin?("vagrant-hostmanager")
+    config.hostmanager.enabled = true
+    config.hostmanager.manage_host = false
+    config.hostmanager.manage_guest = true
+    config.hostmanager.ignore_private_ip = false
+    config.hostmanager.include_offline = true
+  end
+end

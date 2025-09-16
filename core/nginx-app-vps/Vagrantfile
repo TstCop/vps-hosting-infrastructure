@@ -1,0 +1,135 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# Nginx/App VPS Production Vagrantfile
+# IP Público: 136.243.208.131
+# IP Privado: 10.0.0.20
+
+Vagrant.configure("2") do |config|
+  # Box configuration
+  config.vm.box = "generic/ubuntu2204"  # Ubuntu 22.04 LTS with libvirt support
+  config.vm.box_check_update = true
+
+  # VM definition
+  config.vm.define "nginx-app-vps" do |nginx|
+    nginx.vm.hostname = "nginx-app-vps"
+
+    # Network configuration
+    # Public IP for production (using host interface)
+    config.vm.network "public_network",
+      ip: "136.243.208.131",
+      netmask: "255.255.255.248",
+      dev: "enp35s0"
+
+    # Private network for internal communication
+    config.vm.network "private_network",
+      ip: "10.0.0.20",
+      netmask: "255.255.255.0"
+
+    # Port forwarding for development/testing
+    config.vm.network "forwarded_port", guest: 80, host: 8081, auto_correct: true
+    nginx.vm.network "forwarded_port", guest: 443, host: 8444, auto_correct: true
+    nginx.vm.network "forwarded_port", guest: 3000, host: 3000, auto_correct: true
+    nginx.vm.network "forwarded_port", guest: 22, host: 2223, auto_correct: true
+
+    # Provider-specific configuration
+    nginx.vm.provider "libvirt" do |lv|
+      lv.memory = 2048           # 2GB RAM for Nginx/App
+      lv.cpus = 2                # 2+ CPUs
+      lv.storage :file,
+        size: "50G",             # 50GB+ Storage
+        type: "qcow2"
+      lv.machine_virtual_size = 50   # Virtual disk size
+      lv.disk_bus = "virtio"
+      lv.disk_driver :cache => "none"  # Fixed deprecated volume_cache
+      lv.nic_model_type = "virtio"
+      lv.video_type = "qxl"
+      lv.cpu_mode = "host-passthrough"
+      lv.nested = true
+      lv.driver = "kvm"
+    end
+
+    # Synced folders
+    nginx.vm.synced_folder "./config", "/vagrant/config", type: "rsync",
+      rsync__args: ["--verbose", "--archive", "--delete", "-z"]
+    nginx.vm.synced_folder "./scripts", "/vagrant/scripts", type: "rsync",
+      rsync__args: ["--verbose", "--archive", "--delete", "-z"]
+
+    # Provisioning scripts execution order
+    nginx.vm.provision "shell", name: "Update System", inline: <<-SHELL
+      export DEBIAN_FRONTEND=noninteractive
+      apt-get update
+      apt-get upgrade -y
+    SHELL
+
+    nginx.vm.provision "shell", name: "Basic Setup",
+      path: "scripts/provision-nginx-app.sh",
+      privileged: true
+
+    nginx.vm.provision "shell", name: "Install Nginx",
+      path: "scripts/install-nginx.sh",
+      privileged: true
+
+    nginx.vm.provision "shell", name: "Install Node.js",
+      path: "scripts/install-nodejs.sh",
+      privileged: true
+
+    nginx.vm.provision "shell", name: "Install Docker",
+      path: "scripts/install-docker.sh",
+      privileged: true
+
+    nginx.vm.provision "shell", name: "Deploy Application",
+      path: "scripts/deploy-app.sh",
+      privileged: true
+
+    # Post-provision message
+    nginx.vm.post_up_message = <<-MSG
+    ===============================================
+    🚀 Nginx/App VPS está pronto!
+
+    🌐 URLs de Acesso:
+    - Application: https://136.243.208.131
+    - Application (Dev): http://localhost:8081
+    - API: https://136.243.208.131/api
+    - Node.js App: http://136.243.208.131:3000
+
+    🔧 Serviços Configurados:
+    - Nginx (Reverse Proxy/Load Balancer)
+    - Node.js 18+ LTS
+    - Docker & Docker Compose
+    - PM2 Process Manager
+    - SSL/TLS com Let's Encrypt
+
+    📊 Recursos:
+    - RAM: 2GB
+    - CPU: 2 cores
+    - Storage: 50GB
+    - IP Público: 136.243.208.131
+    - IP Privado: 10.0.0.20
+
+    🔧 Comandos úteis:
+    vagrant ssh nginx-app-vps
+    sudo systemctl status nginx
+    sudo pm2 status
+    sudo docker ps
+    ===============================================
+    MSG
+  end
+
+  # Global configurations
+  config.ssh.forward_agent = true
+  config.ssh.forward_x11 = true
+  config.ssh.insert_key = false
+
+  # Vagrant plugins requirements
+  config.vagrant.plugins = ["vagrant-libvirt", "vagrant-hostmanager"]
+
+  # Host manager configuration
+  if Vagrant.has_plugin?("vagrant-hostmanager")
+    config.hostmanager.enabled = true
+    config.hostmanager.manage_host = false
+    config.hostmanager.manage_guest = true
+    config.hostmanager.ignore_private_ip = false
+    config.hostmanager.include_offline = true
+  end
+end

@@ -1,0 +1,125 @@
+---
+# GitLab Configuration for Production VPS
+# File: /opt/xcloud/vps-hosting-infrastructure/core/gitlab-vps/config/gitlab.yaml
+
+gitlab:
+  # Server configuration
+  server:
+    hostname: "gitlab.xcloud.local"
+    external_url: "https://136.243.208.130"
+    ssh_host: "136.243.208.130"
+    ssh_port: 2222
+
+  # Network configuration
+  network:
+    public_ip: "136.243.208.130"
+    private_ip: "10.0.0.10"
+    subnet_mask: "255.255.255.248"
+    gateway: "136.243.208.129"
+    dns_servers:
+      - "8.8.8.8"
+      - "8.8.4.4"
+      - "1.1.1.1"
+
+  # Resource allocation
+  resources:
+    memory: "4096"           # 4GB RAM
+    cpus: 2                  # 2 CPU cores
+    storage: "100G"          # 100GB storage
+    swap: "2G"               # 2GB swap
+
+  # GitLab specific settings
+  settings:
+    # Disable some features to save memory
+    prometheus_monitoring:
+      enable: false
+    grafana:
+      enable: false
+    alertmanager:
+      enable: false
+
+    # Reduce worker processes for smaller instance
+    puma:
+      worker_processes: 2
+      worker_timeout: 60
+
+    # Database settings
+    postgresql:
+      shared_preload_libraries: "pg_stat_statements"
+      max_connections: 200
+
+    # Redis settings
+    redis:
+      maxmemory: "256mb"
+      maxmemory_policy: "allkeys-lru"
+
+  # Container Registry
+  registry:
+    enable: true
+    external_url: "https://136.243.208.130:5050"
+    storage_path: "/var/opt/gitlab/gitlab-rails/shared/registry"
+
+  # GitLab Runner configuration
+  runner:
+    registration_token: "{{ gitlab_runner_token }}"
+    concurrent: 2
+    check_interval: 3
+    builds_dir: "/tmp/gitlab-runner/builds"
+    cache_dir: "/tmp/gitlab-runner/cache"
+
+    # Docker executor configuration
+    docker:
+      image: "ubuntu:22.04"
+      privileged: false
+      disable_cache: false
+      volumes:
+        - "/cache"
+        - "/var/run/docker.sock:/var/run/docker.sock"
+
+  # SSL/TLS configuration
+  ssl:
+    certificate_path: "/etc/ssl/certs/gitlab.crt"
+    private_key_path: "/etc/ssl/private/gitlab.key"
+    certificate_authority_path: "/etc/ssl/certs/ca.crt"
+
+  # Backup configuration
+  backup:
+    path: "/var/opt/gitlab/backups"
+    archive_permissions: "0600"
+    keep_time: 604800  # 7 days
+    upload:
+      connection:
+        provider: "Local"
+        local_root: "/backup/gitlab"
+    cron:
+      hour: 2
+      minute: 0
+      day: "*"
+
+  # Email configuration
+  email:
+    enabled: true
+    smtp_enable: true
+    smtp_address: "localhost"
+    smtp_port: 587
+    smtp_user_name: "gitlab@xcloud.local"
+    smtp_domain: "xcloud.local"
+
+  # Security settings
+  security:
+    # Rate limiting
+    rack_attack:
+      enabled: true
+      max_requests_per_period: 300
+      period: 60
+
+    # Session timeout
+    session_expire_delay: 10080  # 1 week in minutes
+
+    # Password requirements
+    password_requirements:
+      minimum_length: 12
+      require_numbers: true
+      require_symbols: true
+      require_uppercase: true
+      require_lowercase: true

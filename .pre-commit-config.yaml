@@ -65,18 +65,18 @@ repos:
         files: \.(yaml|yml)$
 
   # ============================================================================
-  # VALIDAÇÃO TYPESCRIPT/JAVASCRIPT
+  # VALIDAÇÃO TYPESCRIPT/JAVASCRIPT (DESABILITADO - SEM ARQUIVOS JS/TS)
   # ============================================================================
-  - repo: https://github.com/pre-commit/mirrors-eslint
-    rev: v8.44.0
-    hooks:
-      - id: eslint
-        name: Verificar código TypeScript/JavaScript
-        files: \.(ts|js|tsx|jsx)$
-        additional_dependencies:
-          - '@typescript-eslint/eslint-plugin'
-          - '@typescript-eslint/parser'
-          - 'eslint-plugin-node'
+  # - repo: https://github.com/pre-commit/mirrors-eslint
+  #   rev: v8.44.0
+  #   hooks:
+  #     - id: eslint
+  #       name: Verificar código TypeScript/JavaScript
+  #       files: \.(ts|js|tsx|jsx)$
+  #       additional_dependencies:
+  #         - '@typescript-eslint/eslint-plugin'
+  #         - '@typescript-eslint/parser'
+  #         - 'eslint-plugin-node'
 
   # ============================================================================
   # HOOKS CUSTOMIZADOS - VPS HOSTING ESPECÍFICOS
