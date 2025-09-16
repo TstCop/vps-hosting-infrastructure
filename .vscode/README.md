@@ -10,7 +10,7 @@ Este arquivo configura tarefas úteis para desenvolvimento e gestão dos VPS.
 
 ### 🏗️ **Gestão de VPS**
 - **🏗️ Start GitLab VPS**: Iniciar VPS do GitLab
-- **🌐 Start Nginx App VPS**: Iniciar VPS do Nginx App  
+- **🌐 Start Nginx App VPS**: Iniciar VPS do Nginx App
 - **🛑 Stop All VPS**: Parar todos os VPS
 - **🔄 Restart VPS**: Reiniciar todos os VPS
 - **🧹 Clean VPS**: Destruir todos os VPS ⚠️

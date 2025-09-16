@@ -203,7 +203,9 @@
             "options": {
                 "cwd": "${workspaceFolder}/app"
             },
-            "problemMatcher": ["$tsc"],
+            "problemMatcher": [
+                "$tsc"
+            ],
             "detail": "Iniciar servidor de desenvolvimento da aplicação",
             "isBackground": true
         },
@@ -221,7 +223,9 @@
             "options": {
                 "cwd": "${workspaceFolder}/app"
             },
-            "problemMatcher": ["$tsc"],
+            "problemMatcher": [
+                "$tsc"
+            ],
             "detail": "Compilar aplicação TypeScript"
         }
     ]
