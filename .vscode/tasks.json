@@ -1,0 +1,228 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "🚀 Setup Environment",
+            "type": "shell",
+            "command": "sudo ./setup.sh",
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "new",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [],
+            "detail": "Preparar ambiente Ubuntu 22.04/24.04 com Vagrant+KVM"
+        },
+        {
+            "label": "🔧 Install Git Hooks",
+            "type": "shell",
+            "command": "./scripts/hooks/install-hooks.sh",
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "new"
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [],
+            "detail": "Instalar hooks git para validação automática"
+        },
+        {
+            "label": "🏗️ Start GitLab VPS",
+            "type": "shell",
+            "command": "vagrant up",
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "new"
+            },
+            "options": {
+                "cwd": "${workspaceFolder}/core/gitlab-vps"
+            },
+            "problemMatcher": [],
+            "detail": "Iniciar VPS do GitLab"
+        },
+        {
+            "label": "🌐 Start Nginx App VPS",
+            "type": "shell",
+            "command": "vagrant up",
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "new"
+            },
+            "options": {
+                "cwd": "${workspaceFolder}/core/nginx-app-vps"
+            },
+            "problemMatcher": [],
+            "detail": "Iniciar VPS do Nginx App"
+        },
+        {
+            "label": "🛑 Stop All VPS",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-c",
+                "cd core/gitlab-vps && vagrant halt; cd ../nginx-app-vps && vagrant halt"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "new"
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [],
+            "detail": "Parar todos os VPS"
+        },
+        {
+            "label": "📊 VPS Status",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-c",
+                "echo '=== GitLab VPS ===' && cd core/gitlab-vps && vagrant status; echo '=== Nginx App VPS ===' && cd ../nginx-app-vps && vagrant status"
+            ],
+            "group": "test",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "new"
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [],
+            "detail": "Verificar status de todos os VPS"
+        },
+        {
+            "label": "🔍 Validate Project",
+            "type": "shell",
+            "command": "./scripts/hooks/validate-vps-structure.sh",
+            "group": "test",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "new"
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [],
+            "detail": "Validar estrutura e configurações do projeto"
+        },
+        {
+            "label": "🧹 Clean VPS",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-c",
+                "cd core/gitlab-vps && vagrant destroy -f; cd ../nginx-app-vps && vagrant destroy -f"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "new"
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [],
+            "detail": "Destruir todos os VPS (cuidado!)"
+        },
+        {
+            "label": "🔄 Restart VPS",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-c",
+                "cd core/gitlab-vps && vagrant reload; cd ../nginx-app-vps && vagrant reload"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "new"
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [],
+            "detail": "Reiniciar todos os VPS"
+        },
+        {
+            "label": "📝 Show Logs",
+            "type": "shell",
+            "command": "find /tmp -name 'vps-setup-*.log' -exec tail -50 {} \\;",
+            "group": "test",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "new"
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [],
+            "detail": "Mostrar últimas 50 linhas dos logs do setup"
+        },
+        {
+            "label": "🌊 App Dev Server",
+            "type": "shell",
+            "command": "npm run dev",
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "new"
+            },
+            "options": {
+                "cwd": "${workspaceFolder}/app"
+            },
+            "problemMatcher": ["$tsc"],
+            "detail": "Iniciar servidor de desenvolvimento da aplicação",
+            "isBackground": true
+        },
+        {
+            "label": "🔨 Build App",
+            "type": "shell",
+            "command": "npm run build",
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "new"
+            },
+            "options": {
+                "cwd": "${workspaceFolder}/app"
+            },
+            "problemMatcher": ["$tsc"],
+            "detail": "Compilar aplicação TypeScript"
+        }
+    ]
+}

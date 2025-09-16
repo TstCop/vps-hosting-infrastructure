@@ -17,10 +17,17 @@ build/
 .env.development
 
 # IDE files
-.vscode/
+.vscode/launch.json
+.vscode/c_cpp_properties.json
+.vscode/*.code-workspace
 .idea/
 *.swp
 *.swo
+
+# Allow useful VS Code configurations
+!.vscode/tasks.json
+!.vscode/settings.json
+!.vscode/README.md
 
 # OS generated files
 .DS_Store
