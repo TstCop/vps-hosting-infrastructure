@@ -1,0 +1,140 @@
+# Pre-commit hooks configuration for VPS Hosting Infrastructure
+# See https://pre-commit.com for more information
+
+repos:
+  # ============================================================================
+  # VALIDAÇÕES BÁSICAS
+  # ============================================================================
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      # Validações gerais de arquivos
+      - id: trailing-whitespace
+        name: Remover espaços em branco no final das linhas
+      - id: end-of-file-fixer
+        name: Corrigir final dos arquivos
+      - id: check-yaml
+        name: Verificar sintaxe YAML
+        args: ['--multi']
+      - id: check-json
+        name: Verificar sintaxe JSON
+      - id: check-xml
+        name: Verificar sintaxe XML
+      - id: check-toml
+        name: Verificar sintaxe TOML
+
+      # Validações de merge conflicts
+      - id: check-merge-conflict
+        name: Verificar conflitos de merge
+
+      # Validações de arquivos grandes
+      - id: check-added-large-files
+        name: Verificar arquivos grandes
+        args: ['--maxkb=2048']  # Aumentado para VMs
+
+      # Validações de credenciais
+      - id: detect-private-key
+        name: Detectar chaves privadas
+
+      # Validações de scripts
+      - id: check-executables-have-shebangs
+        name: Verificar shebang em executáveis
+      - id: check-shebang-scripts-are-executable
+        name: Verificar permissões de scripts
+
+  # ============================================================================
+  # VALIDAÇÃO DE SHELL SCRIPTS
+  # ============================================================================
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.9.0.5
+    hooks:
+      - id: shellcheck
+        name: Verificar scripts com shellcheck
+        args: ['-e', 'SC1091']  # Ignore source file not found
+        files: \.(sh|bash)$
+
+  # ============================================================================
+  # VALIDAÇÃO YAML ESPECÍFICA PARA VAGRANT E INFRA
+  # ============================================================================
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.32.0
+    hooks:
+      - id: yamllint
+        name: Validar arquivos YAML
+        args: ['-d', '{extends: default, rules: {line-length: {max: 120}, indentation: {spaces: 2}}}']
+        files: \.(yaml|yml)$
+
+  # ============================================================================
+  # VALIDAÇÃO TYPESCRIPT/JAVASCRIPT
+  # ============================================================================
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    rev: v8.44.0
+    hooks:
+      - id: eslint
+        name: Verificar código TypeScript/JavaScript
+        files: \.(ts|js|tsx|jsx)$
+        additional_dependencies:
+          - '@typescript-eslint/eslint-plugin'
+          - '@typescript-eslint/parser'
+          - 'eslint-plugin-node'
+
+  # ============================================================================
+  # HOOKS CUSTOMIZADOS - VPS HOSTING ESPECÍFICOS
+  # ============================================================================
+  - repo: local
+    hooks:
+      # Validar estrutura do projeto VPS
+      - id: validate-vps-structure
+        name: Validar estrutura do projeto VPS
+        entry: scripts/hooks/validate-vps-structure.sh
+        language: script
+        stages: [pre-commit]
+        pass_filenames: true
+
+      # Validar configurações Vagrant
+      - id: validate-vagrant-configs
+        name: Validar configurações Vagrant
+        entry: scripts/hooks/validate-vagrant.sh
+        language: script
+        stages: [pre-commit]
+        files: Vagrantfile|.*\.yaml$
+
+      # Validar IPs e configurações de rede
+      - id: validate-network-config
+        name: Validar configurações de rede
+        entry: scripts/hooks/validate-network.sh
+        language: script
+        stages: [pre-commit]
+        files: config/network\.yaml|.*network.*\.yaml$
+
+      # Validar convenção de commits para VPS
+      - id: vps-commit-msg-format
+        name: Validar formato da mensagem de commit VPS
+        entry: scripts/hooks/validate-vps-commit-msg.sh
+        language: script
+        stages: [commit-msg]
+
+      # Proteger arquivos de produção
+      - id: protect-production-files
+        name: Proteger arquivos críticos de produção
+        entry: scripts/hooks/protect-production.sh
+        language: script
+        stages: [pre-commit]
+        files: PRD\.md|README\.md|core/.*
+
+  # ============================================================================
+  # MARKDOWN E DOCUMENTAÇÃO
+  # ============================================================================
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.35.0
+    hooks:
+      - id: markdownlint
+        name: Validar arquivos Markdown
+        args: ['--fix', '--config', '.markdownlint.json']
+
+# ==============================================================================
+# CONFIGURAÇÃO GLOBAL
+# ==============================================================================
+default_stages: [pre-commit]
+fail_fast: false
+minimum_pre_commit_version: '2.0.0'

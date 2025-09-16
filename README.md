@@ -12,6 +12,7 @@ Este projeto gerencia uma infraestrutura completa de VPS hosting com duas princi
 ## 🏗️ Arquitetura de Produção
 
 ### Infraestrutura Base
+
 - **Sistema Operacional**: Ubuntu 22.04 LTS
 - **Virtualização**: Vagrant + Libvirt/QEMU
 - **Rede**: Redes privadas para comunicação interna entre VMs
@@ -26,7 +27,7 @@ Internet
     ├── GitLab VPS (IP Público)
     │   └── Repositórios + CI/CD
     │
-    └── Nginx/App VPS (IP Público) 
+    └── Nginx/App VPS (IP Público)
         ├── Nginx (Proxy/Load Balancer)
         ├── Aplicação Node.js
         └── Rede Privada ←→ Outras VMs
@@ -35,9 +36,11 @@ Internet
 ## 🌐 Configuração de IPs
 
 ### IP Principal
+
 - **136.243.94.243** - IP IPv4 principal
 
 ### Subnet IPv4 (/29)
+
 **Range**: `136.243.208.128/29` (8 IPs total, 6 utilizáveis)
 
 | IP | Uso Planejado | Status |
@@ -52,12 +55,14 @@ Internet
 | `136.243.208.135` | Broadcast Address | Reservado |
 
 ### Subnet IPv6
+
 - **Range**: `2a01:48:171:76b::/64`
 - Utilização conforme necessidade de expansão
 
 ## 🖥️ Máquinas Virtuais
 
 ### 1. GitLab VPS
+
 - **IP Público**: `136.243.208.130`
 - **OS**: Ubuntu 22.04 LTS
 - **Serviços**:
@@ -69,7 +74,8 @@ Internet
   - Storage: 100GB+
   - CPU: 2+ cores
 
-### 2. Nginx/App VPS  
+### 2. Nginx/App VPS
+
 - **IP Público**: `136.243.208.131`
 - **OS**: Ubuntu 22.04 LTS
 - **Serviços**:
@@ -110,6 +116,7 @@ vps-hosting-infrastructure/
 ## 🚀 Quick Start
 
 ### Pré-requisitos
+
 - Ubuntu 22.04 LTS
 - Vagrant 2.4+ (✅ v2.4.9 instalado)
 - Libvirt + QEMU (✅ v10.0.0 configurado)
@@ -117,6 +124,7 @@ vps-hosting-infrastructure/
 - Docker & Docker Compose
 
 ### Configuração Atual do Sistema
+
 Seu servidor já possui uma configuração avançada do Vagrant em `/opt/k8s/` com:
 
 - **VMs Ativas**: `k8s_prod-w1`, `k8s_prod-cp1` (rodando)
@@ -125,6 +133,7 @@ Seu servidor já possui uma configuração avançada do Vagrant em `/opt/k8s/` c
 - **12 Nós**: Gateway, Load Balancer, API Gateway, Masters, Workers
 
 ### Instalação
+
 ```bash
 # Clone o repositório
 git clone <repository-url>
@@ -145,6 +154,7 @@ docker-compose up -d
 ```
 
 ### Deploy da Infraestrutura
+
 ```bash
 # Verificar VMs existentes (baseado na configuração em /opt/k8s/)
 cd /opt/k8s
@@ -160,7 +170,7 @@ cd /opt/xcloud/vps-hosting-infrastructure/core/
 cd gitlab-vps/
 vagrant up
 
-# Deploy Nginx/App VPS  
+# Deploy Nginx/App VPS
 cd ../nginx-app-vps/
 vagrant up
 ```
@@ -168,12 +178,14 @@ vagrant up
 ## 🔧 Configuração
 
 ### Rede Privada
+
 - **Range**: `10.0.0.0/24`
 - **GitLab VPS**: `10.0.0.10`
 - **Nginx/App VPS**: `10.0.0.20`
 - **Outras VMs**: `10.0.0.30+`
 
 ### Portas e Serviços
+
 - **22**: SSH (todas as VMs)
 - **80/443**: HTTP/HTTPS (Nginx VPS)
 - **3000**: API Node.js (App VPS)
@@ -193,9 +205,59 @@ vagrant up
 - Updates automáticos configurados
 - Backup diário automatizado
 
+## 🔧 Qualidade de Código
+
+### Git Hooks e Pre-commit
+
+O projeto utiliza **pre-commit hooks** para garantir qualidade e consistência:
+
+#### Hooks Configurados
+
+- **🔍 Validações Básicas**: Sintaxe YAML, JSON, scripts
+- **📝 Linting**: ShellCheck para scripts, ESLint para TypeScript
+- **🏗️ Estrutura**: Validação da arquitetura do projeto
+- **🌐 Rede**: Validação de IPs e configurações de rede
+- **🛡️ Segurança**: Detecção de credenciais e chaves privadas
+- **📋 Commits**: Convenção de mensagens (Conventional Commits)
+
+#### Convenção de Commits
+
+```bash
+# Formato: tipo(escopo): descrição
+feat(api): adicionar endpoint para gerenciar VMs
+fix(vagrant): corrigir configuração de rede privada
+docs(readme): atualizar instruções de instalação
+infra(network): configurar IPs de produção
+```
+
+#### Tipos Permitidos
+
+- `feat`, `fix`, `docs`, `style`, `refactor`, `test`
+- `chore`, `ci`, `infra`, `config`, `vagrant`, `vps`, `network`
+
+#### Escopos Válidos
+
+- `api`, `vagrant`, `network`, `docs`, `core`, `app`
+- `gitlab`, `nginx`, `monitoring`, `security`, `backup`
+
+### Instalação dos Hooks
+
+```bash
+# Instalar pre-commit (já configurado no projeto)
+pipx install pre-commit
+
+# Instalar hooks no repositório
+pre-commit install
+pre-commit install --hook-type commit-msg
+
+# Testar hooks manualmente
+pre-commit run --all-files
+```
+
 ## 🛠️ Manutenção
 
 ### Backup
+
 ```bash
 # Backup manual
 cd app/src/scripts
@@ -206,6 +268,7 @@ cd app/src/scripts
 ```
 
 ### Monitoramento de Recursos
+
 ```bash
 # Verificar status das VMs do projeto
 vagrant status
@@ -233,10 +296,14 @@ df -h
 ## 📝 Changelog
 
 ### v1.0.0 (2025-09-16)
+
 - Configuração inicial da infraestrutura de produção
 - Deploy das VMs GitLab e Nginx/App
 - Configuração de rede e IPs públicos
 - Aplicação de gerenciamento funcional
+- **Pre-commit hooks** configurados para qualidade de código
+- **Conventional Commits** implementado
+- Scripts de validação para Vagrant e configurações de rede
 
 ---
 
