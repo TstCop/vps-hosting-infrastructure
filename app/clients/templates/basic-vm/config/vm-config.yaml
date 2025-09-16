@@ -1,0 +1,26 @@
+# vm-config.yaml
+
+vm:
+  name: basic-vm
+  cpus: 2
+  memory: 2048
+  disk:
+    size: 20G
+  network:
+    type: bridged
+    bridge: virbr0
+  os:
+    type: linux
+    distribution: ubuntu
+    version: 20.04
+  ssh:
+    username: vagrant
+    password: vagrant
+    port: 22
+  provision:
+    scripts:
+      - provision.sh
+      - setup.sh
+  additional:
+    firewall: true
+    monitoring: false

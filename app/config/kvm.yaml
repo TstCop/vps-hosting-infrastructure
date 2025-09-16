@@ -1,0 +1,15 @@
+# KVM Configuration for VPS Hosting Infrastructure
+
+kvm:
+  hypervisor: "KVM"
+  default_storage_pool: "default"
+  default_network: "default"
+  default_memory: 2048  # Default memory in MB
+  default_cpus: 2        # Default number of CPUs
+  default_disk_size: 20G  # Default disk size
+  ssh_key_path: "~/.ssh/id_rsa.pub"  # Path to the SSH public key for VM access
+  network_bridge: "br0"  # Network bridge for VMs
+  timeout: 300  # Timeout for VM operations in seconds
+  logging:
+    level: "info"  # Logging level (debug, info, warn, error)
+    log_file: "/var/log/kvm_manager.log"  # Log file path

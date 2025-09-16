@@ -1,0 +1,11 @@
+database:
+  host: localhost
+  port: 5432
+  username: your_username
+  password: your_password
+  database_name: vps_hosting_db
+  dialect: postgres
+  pool:
+    max: 5
+    min: 0
+    idle: 10000

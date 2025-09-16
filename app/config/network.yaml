@@ -1,0 +1,16 @@
+network:
+  version: 2
+  ethernets:
+    eth0:
+      dhcp4: true
+      dhcp6: true
+      addresses:
+        - 192.168.1.100/24
+        - 2001:db8::1/64
+      gateway4: 192.168.1.1
+      gateway6: 2001:db8::fffe
+      nameservers:
+        addresses:
+          - 8.8.8.8
+          - 8.8.4.4
+      optional: true

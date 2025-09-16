@@ -1,0 +1,11 @@
+Vagrant.configure("2") do |config|
+  config.vm.box = "ubuntu/bionic64"  # Specify the base box to use
+
+  # Network configuration
+  config.vm.network "private_network", type: "dhcp"
+
+  # Provisioning script
+  config.vm.provision "shell", path: "scripts/provision.sh"
+
+  # Additional VM settings can be added here
+end

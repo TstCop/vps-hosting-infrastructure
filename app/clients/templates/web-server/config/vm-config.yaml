@@ -1,0 +1,19 @@
+version: '2.2'
+
+vm:
+  name: web-server
+  cpus: 2
+  memory: 2048
+  disk_size: 20GB
+  network:
+    - type: private_network
+      ip: "192.168.33.10"
+  provision:
+    - type: shell
+      path: scripts/provision.sh
+  setup:
+    - type: shell
+      path: scripts/setup.sh
+  os:
+    type: ubuntu
+    version: "20.04"

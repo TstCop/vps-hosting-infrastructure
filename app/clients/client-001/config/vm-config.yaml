@@ -1,0 +1,20 @@
+# VM Configuration for Client 001
+
+vm:
+  name: client-001-vm
+  cpus: 2
+  memory: 2048
+  disk:
+    size: 20GB
+  network:
+    type: bridged
+    ip: 192.168.1.100
+  os:
+    type: ubuntu
+    version: 20.04
+  provision:
+    scripts:
+      - ./scripts/provision.sh
+      - ./scripts/setup.sh
+
+# Additional settings can be added as needed.

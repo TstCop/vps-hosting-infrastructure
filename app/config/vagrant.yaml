@@ -1,0 +1,13 @@
+vagrant:
+  default:
+    box: "ubuntu/bionic64"
+    memory: 2048
+    cpus: 2
+    network:
+      - ["private_network", { type: "dhcp" }]
+    synced_folder:
+      - ["./data", "/vagrant_data"]
+    provision:
+      - type: "shell"
+        path: "scripts/provision.sh"
+    post_up_message: "Vagrant environment is ready!"

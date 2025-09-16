@@ -1,0 +1,17 @@
+network:
+  type: "bridge"
+  name: "br0"
+  ip_address: "192.168.1.100"
+  netmask: "255.255.255.0"
+
+vm:
+  name: "client-002-vm"
+  cpus: 2
+  memory: 2048
+  disk_size: "20G"
+  os: "ubuntu/bionic64"
+  provision:
+    - type: "shell"
+      script: "scripts/provision.sh"
+    - type: "shell"
+      script: "scripts/setup.sh"

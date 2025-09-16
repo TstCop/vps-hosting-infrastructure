@@ -1,0 +1,30 @@
+{
+  "name": "vps-hosting-infrastructure",
+  "version": "1.0.0",
+  "description": "Infrastructure project for managing Vagrant and KVM for a VPS hosting company.",
+  "main": "src/api/app.ts",
+  "scripts": {
+    "start": "ts-node src/api/app.ts",
+    "build": "tsc",
+    "test": "jest"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "mongoose": "^5.10.9",
+    "vagrant": "^2.2.14",
+    "libvirt": "^0.5.16"
+  },
+  "devDependencies": {
+    "typescript": "^4.1.2",
+    "ts-node": "^9.1.1",
+    "jest": "^26.6.3",
+    "@types/jest": "^26.0.0",
+    "@types/node": "^14.14.31"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/vps-hosting-infrastructure.git"
+  },
+  "author": "Your Name",
+  "license": "MIT"
+}
