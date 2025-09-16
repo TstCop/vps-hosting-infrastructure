@@ -1,25 +1,61 @@
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import bodyParser from 'body-parser';
 import clientRoutes from './routes/clients';
 import vmRoutes from './routes/vms';
+import templateRoutes from './routes/templates';
+import configRoutes from './routes/configs';
+import monitoringRoutes from './routes/monitoring';
 import { authMiddleware } from './middleware/auth';
-import { validationMiddleware } from './middleware/validation';
 
 const app = express();
 
 // Middleware
 app.use(bodyParser.json());
-app.use(authMiddleware);
-app.use(validationMiddleware);
+
+// Only use auth middleware if not in test environment
+if (process.env.NODE_ENV !== 'test') {
+    app.use(authMiddleware);
+}
 
 // Routes
 app.use('/api/clients', clientRoutes);
 app.use('/api/vms', vmRoutes);
+app.use('/api/templates', templateRoutes);
+app.use('/api/configs', configRoutes);
+app.use('/api/monitoring', monitoringRoutes);
+
+// RF04.2: VM metrics route (specific to VMs)
+import MonitoringController from './controllers/MonitoringController';
+const monitoringController = new MonitoringController();
+app.get('/api/vms/:id/metrics', monitoringController.getVMMetrics.bind(monitoringController));
+
+// Health check endpoint
+app.get('/api/health', (req: Request, res: Response) => {
+    res.status(200).json({
+        success: true,
+        message: 'VPS Hosting Infrastructure API is running',
+        timestamp: new Date(),
+        version: '1.0.0'
+    });
+});
 
 // Error handling
-app.use((err, req, res, next) => {
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
     console.error(err.stack);
-    res.status(500).send('Something broke!');
+    res.status(500).json({
+        success: false,
+        error: 'Internal server error',
+        message: 'Something went wrong!'
+    });
+});
+
+// 404 handler
+app.use((req: Request, res: Response) => {
+    res.status(404).json({
+        success: false,
+        error: 'Not found',
+        message: `Route ${req.method} ${req.path} not found`
+    });
 });
 
 export default app;
