@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# pre-commit hook - Validações antes do commit
+# Este hook executa todas as validações necessárias antes de permitir um commit
+
+set -euo pipefail
+
+# Diretório base do projeto
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+HOOKS_DIR="$REPO_ROOT/scripts/hooks"
+
+# Cores para output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+echo -e "${BLUE}🚀 Executando validações pre-commit...${NC}"
+
+# Lista de validações a executar
+validations=(
+    "validate-vps-structure.sh"
+    "validate-network.sh"
+    "validate-vagrant.sh"
+)
+
+# Executar cada validação
+for validation in "${validations[@]}"; do
+    validation_path="$HOOKS_DIR/$validation"
+    
+    if [[ -f "$validation_path" && -x "$validation_path" ]]; then
+        echo -e "${YELLOW}🔍 Executando $validation...${NC}"
+        
+        if ! "$validation_path"; then
+            echo -e "${RED}❌ Validação falhou: $validation${NC}"
+            echo -e "${RED}💥 Commit abortado devido a falhas na validação${NC}"
+            exit 1
+        fi
+        
+        echo -e "${GREEN}✅ $validation passou${NC}"
+    else
+        echo -e "${YELLOW}⚠️  Validação não encontrada ou não executável: $validation${NC}"
+    fi
+done
+
+echo -e "${GREEN}🎉 Todas as validações passaram!${NC}"
+echo -e "${GREEN}✅ Commit autorizado${NC}"
+
+exit 0

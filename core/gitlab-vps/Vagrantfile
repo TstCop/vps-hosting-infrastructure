@@ -15,16 +15,14 @@ Vagrant.configure("2") do |config|
     gitlab.vm.hostname = "gitlab-vps"
 
     # Network configuration
-    # Public IP for production (using host interface)
-    config.vm.network "public_network",
-      ip: "136.243.208.130",
-      netmask: "255.255.255.248",
-      dev: "enp35s0"
-
-    # Private network for internal communication
+    # Private network for internal communication (start with this first)
     config.vm.network "private_network",
       ip: "10.0.0.10",
       netmask: "255.255.255.0"
+
+    # Public network (bridge mode - let DHCP assign IP first)
+    config.vm.network "public_network",
+      bridge: "enp35s0"
 
     # Port forwarding for development/testing
     config.vm.network "forwarded_port", guest: 80, host: 8080, auto_correct: true

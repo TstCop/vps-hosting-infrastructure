@@ -12,6 +12,47 @@ NC='\033[0m' # No Color
 
 echo -e "${YELLOW}🔍 Validando estrutura do projeto VPS...${NC}"
 
+# Verificar política de scripts .sh
+echo "🔧 Verificando política de scripts .sh..."
+
+# Permitir apenas setup.sh na raiz
+root_sh_files=($(find . -maxdepth 1 -name "*.sh" -type f | grep -v "^\./setup\.sh$" || true))
+if [[ ${#root_sh_files[@]} -gt 0 ]]; then
+    echo -e "${RED}❌ Scripts .sh não permitidos na raiz (exceto setup.sh):${NC}"
+    printf "${RED}   %s${NC}\n" "${root_sh_files[@]}"
+    echo -e "${YELLOW}   Mova estes scripts para scripts/hooks/ ou para diretórios específicos dos VPS${NC}"
+    exit 1
+fi
+
+# Verificar se setup.sh existe na raiz
+if [[ ! -f "./setup.sh" ]]; then
+    echo -e "${RED}❌ Arquivo setup.sh obrigatório não encontrado na raiz${NC}"
+    exit 1
+fi
+
+# Permitir scripts .sh em locais específicos:
+# - scripts/hooks/ (hooks do git)
+# - */scripts/ (scripts dos VPS)
+# - Excluir .vagrant (arquivos temporários do vagrant)
+invalid_sh_files=($(find . -name "*.sh" -type f \
+    ! -path "./setup.sh" \
+    ! -path "./scripts/hooks/*" \
+    ! -path "./*/scripts/*" \
+    ! -path "*/.vagrant/*" \
+    || true))
+
+if [[ ${#invalid_sh_files[@]} -gt 0 ]]; then
+    echo -e "${RED}❌ Scripts .sh em locais não permitidos:${NC}"
+    printf "${RED}   %s${NC}\n" "${invalid_sh_files[@]}"
+    echo -e "${YELLOW}   Locais permitidos:${NC}"
+    echo -e "${YELLOW}   - Raiz: apenas setup.sh${NC}"
+    echo -e "${YELLOW}   - scripts/hooks/ (hooks do git)${NC}"
+    echo -e "${YELLOW}   - */scripts/ (scripts dos VPS)${NC}"
+    exit 1
+fi
+
+echo -e "${GREEN}✅ Política de scripts .sh válida${NC}"
+
 # Estrutura obrigatória
 required_dirs=(
     "app"
@@ -61,6 +102,7 @@ allowed_root_files=(
     ".markdownlint.json"
     "LICENSE"
     "CHANGELOG.md"
+    "setup.sh"
 )
 
 for file in *; do
