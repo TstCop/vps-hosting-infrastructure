@@ -451,6 +451,35 @@ class MonitoringController {
         
         return intervals;
     }
+
+    updateAlert = async (req: Request, res: Response) => {
+        try {
+            const { id } = req.params;
+            const { status, action } = req.body;
+
+            // Mock alert update - in production this would update a real database
+            const alertUpdate = {
+                id,
+                status: status || 'acknowledged',
+                action: action || 'acknowledged',
+                updatedAt: new Date().toISOString(),
+                updatedBy: 'admin'
+            };
+
+            const response: ApiResponse = {
+                success: true,
+                data: alertUpdate,
+                message: 'Alert updated successfully'
+            };
+            res.status(200).json(response);
+        } catch (error) {
+            const response: ApiResponse = {
+                success: false,
+                error: 'Failed to update alert'
+            };
+            res.status(500).json(response);
+        }
+    };
 }
 
 export default MonitoringController;

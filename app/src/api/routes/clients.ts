@@ -22,4 +22,7 @@ router.delete('/:id', clientController.deleteClient.bind(clientController));
 // RF01.6: Get client history
 router.get('/:id/history', clientController.getClientHistory.bind(clientController));
 
+// Get client VMs
+router.get('/:id/vms', clientController.getClientVMs.bind(clientController));
+
 export default router;

@@ -16,6 +16,9 @@ router.get('/alerts', monitoringController.getAlerts.bind(monitoringController))
 // RF04.5: Performance reports
 router.get('/reports/performance', monitoringController.getPerformanceReports.bind(monitoringController));
 
+// Update alert status
+router.put('/alerts/:id', monitoringController.updateAlert.bind(monitoringController));
+
 // RF04.6: Audit trail
 router.get('/audit', monitoringController.getAuditTrail.bind(monitoringController));
 

@@ -4,6 +4,9 @@ import TemplateController from '../controllers/TemplateController';
 const router = Router();
 const templateController = new TemplateController();
 
+// Template categories (must be before /:id route)
+router.get('/categories', templateController.getTemplateCategories.bind(templateController));
+
 // RF03.1: Create custom template
 router.post('/', templateController.createTemplate.bind(templateController));
 
@@ -21,5 +24,8 @@ router.delete('/:id', templateController.deleteTemplate.bind(templateController)
 
 // RF03.3: Template versions
 router.get('/:id/versions', templateController.getTemplateVersions.bind(templateController));
+
+// Deploy template
+router.post('/:id/deploy', templateController.deployTemplate.bind(templateController));
 
 export default router;

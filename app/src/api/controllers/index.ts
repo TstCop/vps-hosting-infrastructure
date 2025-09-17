@@ -1,2 +1,10 @@
+export { default as AuthController } from './AuthController';
 export { default as ClientController } from './ClientController';
+export { default as FileController } from './FileController';
+export { default as LogController } from './LogController';
+export { default as MonitoringController } from './MonitoringController';
+export { default as SearchController } from './SearchController';
+export { default as StatsController } from './StatsController';
+export { default as SystemController } from './SystemController';
+export { default as TemplateController } from './TemplateController';
 export { default as VMController } from './VMController';

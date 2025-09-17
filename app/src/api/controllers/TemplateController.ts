@@ -454,6 +454,82 @@ class TemplateController {
             res.status(500).json(response);
         }
     };
+
+    getTemplateCategories = async (req: Request, res: Response) => {
+        try {
+            const categories = [
+                'OS Base',
+                'Web Server',
+                'Database',
+                'DevOps',
+                'Development'
+            ];
+
+            const response: ApiResponse = {
+                success: true,
+                data: categories
+            };
+            res.status(200).json(response);
+        } catch (error) {
+            const response: ApiResponse = {
+                success: false,
+                error: 'Failed to retrieve template categories'
+            };
+            res.status(500).json(response);
+        }
+    };
+
+    deployTemplate = async (req: Request, res: Response) => {
+        try {
+            const { id } = req.params;
+            const { vmName, clientId, config } = req.body;
+
+            const template = this.templates.find(t => t.id === id);
+            if (!template) {
+                const response: ApiResponse = {
+                    success: false,
+                    error: 'Template not found'
+                };
+                res.status(404).json(response);
+                return;
+            }
+
+            // Validate required fields
+            if (!vmName || !clientId) {
+                const response: ApiResponse = {
+                    success: false,
+                    error: 'vmName and clientId are required'
+                };
+                res.status(400).json(response);
+                return;
+            }
+
+            // Mock deployment - in production this would create an actual VM
+            const deployedVM = {
+                id: uuidv4(),
+                name: vmName,
+                clientId,
+                templateId: id,
+                templateName: template.name,
+                status: 'creating',
+                config: config || template.config,
+                createdAt: new Date().toISOString()
+            };
+
+            const response: ApiResponse = {
+                success: true,
+                data: deployedVM,
+                message: 'Template deployment initiated'
+            };
+            res.status(201).json(response);
+        } catch (error) {
+            const response: ApiResponse = {
+                success: false,
+                error: 'Failed to deploy template'
+            };
+            res.status(500).json(response);
+        }
+    };
 }
 
 export default TemplateController;
