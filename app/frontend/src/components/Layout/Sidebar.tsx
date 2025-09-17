@@ -1,5 +1,13 @@
-import React from 'react';
 import {
+  Computer as ComputerIcon,
+  Dashboard as DashboardIcon,
+  Assignment as LogsIcon,
+  Monitor as MonitoringIcon,
+  People as PeopleIcon,
+  ViewModule as TemplateIcon,
+} from '@mui/icons-material';
+import {
+  Divider,
   Drawer,
   List,
   ListItem,
@@ -8,16 +16,9 @@ import {
   ListItemText,
   Toolbar,
   Typography,
-  Divider,
 } from '@mui/material';
-import {
-  Dashboard as DashboardIcon,
-  People as PeopleIcon,
-  Computer as ComputerIcon,
-  ViewModule as TemplateIcon,
-  Monitor as MonitoringIcon,
-} from '@mui/icons-material';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const drawerWidth = 240;
 
@@ -27,6 +28,7 @@ const menuItems = [
   { text: 'VMs', icon: <ComputerIcon />, path: '/vms' },
   { text: 'Templates', icon: <TemplateIcon />, path: '/templates' },
   { text: 'Monitoring', icon: <MonitoringIcon />, path: '/monitoring' },
+  { text: 'Logs', icon: <LogsIcon />, path: '/logs' },
 ];
 
 const Sidebar: React.FC = () => {

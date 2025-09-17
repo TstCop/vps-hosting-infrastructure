@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
-import { VM, ApiResponse } from '../../types';
 import { v4 as uuidv4 } from 'uuid';
 import { VagrantManager } from '../../lib/vagrant/VagrantManager';
+import { ApiResponse, VM } from '../../types';
 
 export class VMController {
     private vms: VM[] = [];
@@ -11,6 +11,62 @@ export class VMController {
         this.vagrantManager = new VagrantManager();
     }
 
+    /**
+     * @swagger
+     * /api/vms:
+     *   post:
+     *     summary: Create a new Virtual Machine
+     *     tags: [Virtual Machines]
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required:
+     *               - name
+     *               - clientId
+     *             properties:
+     *               name:
+     *                 type: string
+     *                 description: VM name
+     *               clientId:
+     *                 type: string
+     *                 description: Client ID that owns this VM
+     *               template:
+     *                 type: string
+     *                 description: VM template (default ubuntu/jammy64)
+     *               config:
+     *                 type: object
+     *                 properties:
+     *                   cpu:
+     *                     type: integer
+     *                     description: Number of CPU cores
+     *                   memory:
+     *                     type: integer
+     *                     description: Memory in MB
+     *                   storage:
+     *                     type: integer
+     *                     description: Storage in GB
+     *     responses:
+     *       201:
+     *         description: VM creation initiated successfully
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 success:
+     *                   type: boolean
+     *                 data:
+     *                   $ref: '#/components/schemas/VM'
+     *                 message:
+     *                   type: string
+     *       500:
+     *         description: Internal server error
+     */
     // RF02.1: Create new VM with template
     async createVM(req: Request, res: Response) {
         try {
@@ -37,7 +93,7 @@ export class VMController {
 
             // Initialize Vagrant environment
             this.vagrantManager.init();
-            
+
             const response: ApiResponse<VM> = {
                 success: true,
                 data: newVM,
@@ -112,7 +168,7 @@ export class VMController {
         try {
             const vmId = req.params.id;
             const vm = this.vms.find(vm => vm.id === vmId);
-            
+
             if (!vm) {
                 const response: ApiResponse = {
                     success: false,
@@ -121,7 +177,7 @@ export class VMController {
                 res.status(404).json(response);
                 return;
             }
-            
+
             const response: ApiResponse<VM> = {
                 success: true,
                 data: vm
@@ -142,7 +198,7 @@ export class VMController {
             const vmId = req.params.id;
             const updateData = req.body;
             const vmIndex = this.vms.findIndex(vm => vm.id === vmId);
-            
+
             if (vmIndex === -1) {
                 const response: ApiResponse = {
                     success: false,
@@ -151,14 +207,14 @@ export class VMController {
                 res.status(404).json(response);
                 return;
             }
-            
-            this.vms[vmIndex] = { 
-                ...this.vms[vmIndex], 
-                ...updateData, 
+
+            this.vms[vmIndex] = {
+                ...this.vms[vmIndex],
+                ...updateData,
                 updatedAt: new Date(),
                 lastAction: 'configure'
             };
-            
+
             const response: ApiResponse<VM> = {
                 success: true,
                 data: this.vms[vmIndex],
@@ -179,7 +235,7 @@ export class VMController {
         try {
             const vmId = req.params.id;
             const vmIndex = this.vms.findIndex(vm => vm.id === vmId);
-            
+
             if (vmIndex === -1) {
                 const response: ApiResponse = {
                     success: false,
@@ -201,11 +257,11 @@ export class VMController {
 
             // Use Vagrant to start VM
             await this.vagrantManager.start(vm.name);
-            
+
             this.vms[vmIndex].status = 'running';
             this.vms[vmIndex].updatedAt = new Date();
             this.vms[vmIndex].lastAction = 'start';
-            
+
             const response: ApiResponse = {
                 success: true,
                 message: `VM ${vm.name} started successfully`
@@ -225,7 +281,7 @@ export class VMController {
         try {
             const vmId = req.params.id;
             const vmIndex = this.vms.findIndex(vm => vm.id === vmId);
-            
+
             if (vmIndex === -1) {
                 const response: ApiResponse = {
                     success: false,
@@ -247,11 +303,11 @@ export class VMController {
 
             // Use Vagrant to halt VM
             await this.vagrantManager.halt(vm.name);
-            
+
             this.vms[vmIndex].status = 'stopped';
             this.vms[vmIndex].updatedAt = new Date();
             this.vms[vmIndex].lastAction = 'stop';
-            
+
             const response: ApiResponse = {
                 success: true,
                 message: `VM ${vm.name} stopped successfully`
@@ -271,7 +327,7 @@ export class VMController {
         try {
             const vmId = req.params.id;
             const vmIndex = this.vms.findIndex(vm => vm.id === vmId);
-            
+
             if (vmIndex === -1) {
                 const response: ApiResponse = {
                     success: false,
@@ -282,15 +338,15 @@ export class VMController {
             }
 
             const vm = this.vms[vmIndex];
-            
+
             // Stop then start
             await this.vagrantManager.halt(vm.name);
             await this.vagrantManager.start(vm.name);
-            
+
             this.vms[vmIndex].status = 'running';
             this.vms[vmIndex].updatedAt = new Date();
             this.vms[vmIndex].lastAction = 'restart';
-            
+
             const response: ApiResponse = {
                 success: true,
                 message: `VM ${vm.name} restarted successfully`
@@ -310,7 +366,7 @@ export class VMController {
         try {
             const vmId = req.params.id;
             const vmIndex = this.vms.findIndex(vm => vm.id === vmId);
-            
+
             if (vmIndex === -1) {
                 const response: ApiResponse = {
                     success: false,
@@ -321,11 +377,11 @@ export class VMController {
             }
 
             const vm = this.vms[vmIndex];
-            
+
             this.vms[vmIndex].status = 'suspended';
             this.vms[vmIndex].updatedAt = new Date();
             this.vms[vmIndex].lastAction = 'suspend';
-            
+
             const response: ApiResponse = {
                 success: true,
                 message: `VM ${vm.name} suspended successfully`
@@ -345,7 +401,7 @@ export class VMController {
         try {
             const vmId = req.params.id;
             const vmIndex = this.vms.findIndex(vm => vm.id === vmId);
-            
+
             if (vmIndex === -1) {
                 const response: ApiResponse = {
                     success: false,
@@ -356,11 +412,11 @@ export class VMController {
             }
 
             const vm = this.vms[vmIndex];
-            
+
             this.vms[vmIndex].status = 'running';
             this.vms[vmIndex].updatedAt = new Date();
             this.vms[vmIndex].lastAction = 'resume';
-            
+
             const response: ApiResponse = {
                 success: true,
                 message: `VM ${vm.name} resumed successfully`
@@ -380,7 +436,7 @@ export class VMController {
         try {
             const vmId = req.params.id;
             const vmIndex = this.vms.findIndex(vm => vm.id === vmId);
-            
+
             if (vmIndex === -1) {
                 const response: ApiResponse = {
                     success: false,
@@ -391,14 +447,14 @@ export class VMController {
             }
 
             const vm = this.vms[vmIndex];
-            
+
             // Use Vagrant to destroy VM
             await this.vagrantManager.destroy(vm.name);
-            
+
             this.vms[vmIndex].status = 'destroyed';
             this.vms[vmIndex].updatedAt = new Date();
             this.vms[vmIndex].lastAction = 'destroy';
-            
+
             const response: ApiResponse = {
                 success: true,
                 message: `VM ${vm.name} destroyed successfully`
@@ -418,7 +474,7 @@ export class VMController {
         try {
             const sourceVmId = req.params.id;
             const { name: newName } = req.body;
-            
+
             const sourceVM = this.vms.find(vm => vm.id === sourceVmId);
             if (!sourceVM) {
                 const response: ApiResponse = {
@@ -440,7 +496,7 @@ export class VMController {
             };
 
             this.vms.push(clonedVM);
-            
+
             const response: ApiResponse<VM> = {
                 success: true,
                 data: clonedVM,
@@ -461,7 +517,7 @@ export class VMController {
         try {
             const vmId = req.params.id;
             const { name: snapshotName } = req.body;
-            
+
             const vm = this.vms.find(vm => vm.id === vmId);
             if (!vm) {
                 const response: ApiResponse = {
@@ -478,7 +534,7 @@ export class VMController {
                 vmId: vmId,
                 createdAt: new Date()
             };
-            
+
             const response: ApiResponse = {
                 success: true,
                 data: snapshot,
@@ -499,7 +555,7 @@ export class VMController {
         try {
             const vmId = req.params.id;
             const { snapshotId } = req.body;
-            
+
             const vm = this.vms.find(vm => vm.id === vmId);
             if (!vm) {
                 const response: ApiResponse = {
@@ -513,7 +569,7 @@ export class VMController {
             const vmIndex = this.vms.findIndex(vm => vm.id === vmId);
             this.vms[vmIndex].updatedAt = new Date();
             this.vms[vmIndex].lastAction = 'restore';
-            
+
             const response: ApiResponse = {
                 success: true,
                 message: `VM restored from snapshot ${snapshotId}`

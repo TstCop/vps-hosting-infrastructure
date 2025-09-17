@@ -1,10 +1,13 @@
-import React, { useEffect, useState } from 'react';
 import {
-  Grid,
+  CloudQueue as CloudIcon,
+  Computer as ComputerIcon,
+  People as PeopleIcon,
+  Warning as WarningIcon,
+} from '@mui/icons-material';
+import {
+  Box,
   Card,
   CardContent,
-  Typography,
-  Box,
   LinearProgress,
   Table,
   TableBody,
@@ -12,25 +15,20 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Typography,
 } from '@mui/material';
 import {
-  Computer as ComputerIcon,
-  People as PeopleIcon,
-  CloudQueue as CloudIcon,
-  Warning as WarningIcon,
-} from '@mui/icons-material';
-import { Line } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
   CategoryScale,
+  Chart as ChartJS,
+  Legend,
   LinearScale,
-  PointElement,
   LineElement,
+  PointElement,
   Title,
   Tooltip,
-  Legend,
 } from 'chart.js';
-import { apiService } from '../services/apiService';
+import React, { useEffect, useState } from 'react';
+import { Line } from 'react-chartjs-2';
 
 ChartJS.register(
   CategoryScale,
@@ -48,113 +46,84 @@ interface DashboardData {
   stoppedVMs: number;
   totalClients: number;
   activeClients: number;
-  resourceUsage: {
-    cpu: { used: number; total: number; unit: string };
-    memory: { used: number; total: number; unit: string };
-    storage: { used: number; total: number; unit: string };
-  };
-  recentActivity: Array<{
-    id: string;
-    type: string;
-    message: string;
-    timestamp: string;
-  }>;
+  cpuUsage: number;
+  memoryUsage: number;
+  diskUsage: number;
+  networkUsage: number;
 }
 
-const StatCard: React.FC<{
-  title: string;
-  value: number;
-  subtitle?: string;
-  icon: React.ReactNode;
-  color: string;
-}> = ({ title, value, subtitle, icon, color }) => (
-  <Card>
-    <CardContent>
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-        <Box sx={{ color, mr: 2 }}>{icon}</Box>
-        <Typography variant="h6" component="div">
-          {title}
-        </Typography>
-      </Box>
-      <Typography variant="h4" component="div" sx={{ mb: 1 }}>
-        {value}
-      </Typography>
-      {subtitle && (
-        <Typography variant="body2" color="text.secondary">
-          {subtitle}
-        </Typography>
-      )}
-    </CardContent>
-  </Card>
-);
-
-const ResourceUsageCard: React.FC<{
-  title: string;
-  used: number;
-  total: number;
-  unit: string;
-}> = ({ title, used, total, unit }) => {
-  const percentage = (used / total) * 100;
-  return (
-    <Card>
-      <CardContent>
-        <Typography variant="h6" component="div" sx={{ mb: 2 }}>
-          {title}
-        </Typography>
-        <Box sx={{ mb: 2 }}>
-          <Typography variant="h4" component="span">
-            {used.toFixed(1)}
-          </Typography>
-          <Typography variant="body1" component="span" sx={{ ml: 1 }}>
-            / {total} {unit}
-          </Typography>
-        </Box>
-        <LinearProgress
-          variant="determinate"
-          value={percentage}
-          sx={{ height: 8, borderRadius: 4 }}
-        />
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-          {percentage.toFixed(1)}% used
-        </Typography>
-      </CardContent>
-    </Card>
-  );
-};
+interface VMData {
+  id: string;
+  name: string;
+  status: 'running' | 'stopped' | 'pending';
+  client: string;
+  cpu: number;
+  memory: number;
+  uptime: string;
+}
 
 const Dashboard: React.FC = () => {
-  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<DashboardData>({
+    totalVMs: 0,
+    activeVMs: 0,
+    stoppedVMs: 0,
+    totalClients: 0,
+    activeClients: 0,
+    cpuUsage: 0,
+    memoryUsage: 0,
+    diskUsage: 0,
+    networkUsage: 0,
+  });
+
+  const [vms, setVMs] = useState<VMData[]>([]);
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
+    const fetchData = async () => {
       try {
-        const response = await apiService.get('/monitoring/dashboard');
-        setDashboardData(response.data);
+        // Use mock data directly since API methods don't exist yet
+        setData({
+          totalVMs: 12,
+          activeVMs: 10,
+          stoppedVMs: 2,
+          totalClients: 8,
+          activeClients: 6,
+          cpuUsage: 45,
+          memoryUsage: 62,
+          diskUsage: 38,
+          networkUsage: 25,
+        });
+
+        setVMs([
+          { id: '1', name: 'nginx-app-01', status: 'running', client: 'Client A', cpu: 15, memory: 45, uptime: '5d 2h' },
+          { id: '2', name: 'gitlab-01', status: 'running', client: 'Client B', cpu: 32, memory: 78, uptime: '12d 8h' },
+          { id: '3', name: 'db-server-01', status: 'stopped', client: 'Client A', cpu: 0, memory: 0, uptime: '0' },
+          { id: '4', name: 'web-server-02', status: 'running', client: 'Client C', cpu: 8, memory: 25, uptime: '2d 4h' },
+          { id: '5', name: 'backup-server', status: 'pending', client: 'Client B', cpu: 55, memory: 85, uptime: '1h 30m' },
+        ]);
       } catch (error) {
-        console.error('Failed to fetch dashboard data:', error);
-      } finally {
-        setLoading(false);
+        console.error('Error fetching dashboard data:', error);
       }
     };
 
-    fetchDashboardData();
+    fetchData();
   }, []);
 
   const chartData = {
     labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
     datasets: [
       {
-        label: 'CPU Usage %',
-        data: [65, 59, 80, 81, 56, 55],
+        label: 'CPU Usage (%)',
+        data: [30, 35, 32, 45, 38, 42],
         borderColor: 'rgb(75, 192, 192)',
         backgroundColor: 'rgba(75, 192, 192, 0.2)',
+        tension: 0.1,
       },
       {
-        label: 'Memory Usage %',
-        data: [28, 48, 40, 19, 86, 27],
+        label: 'Memory Usage (%)',
+        data: [50, 55, 48, 62, 58, 65],
         borderColor: 'rgb(255, 99, 132)',
         backgroundColor: 'rgba(255, 99, 132, 0.2)',
+        tension: 0.1,
       },
     ],
   };
@@ -167,146 +136,189 @@ const Dashboard: React.FC = () => {
       },
       title: {
         display: true,
-        text: 'Resource Usage Over Time',
+        text: 'Sistema de Recursos - Últimos 6 Meses',
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        max: 100,
       },
     },
   };
 
-  if (loading) {
-    return (
-      <Box sx={{ width: '100%' }}>
-        <LinearProgress />
-      </Box>
-    );
-  }
-
-  if (!dashboardData) {
-    return (
-      <Typography variant="h6" color="error">
-        Failed to load dashboard data
-      </Typography>
-    );
-  }
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'running': return 'success';
+      case 'stopped': return 'error';
+      case 'pending': return 'warning';
+      default: return 'default';
+    }
+  };
 
   return (
-    <Box>
-      <Typography variant="h4" component="h1" gutterBottom>
+    <Box sx={{ p: 3 }}>
+      <Typography variant="h4" gutterBottom>
         Dashboard
       </Typography>
 
-      {/* Statistics Cards */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Total VMs"
-            value={dashboardData.totalVMs}
-            subtitle={`${dashboardData.activeVMs} active, ${dashboardData.stoppedVMs} stopped`}
-            icon={<ComputerIcon />}
-            color="#1976d2"
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Total Clients"
-            value={dashboardData.totalClients}
-            subtitle={`${dashboardData.activeClients} active`}
-            icon={<PeopleIcon />}
-            color="#2e7d32"
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Templates"
-            value={12}
-            subtitle="Available templates"
-            icon={<CloudIcon />}
-            color="#ed6c02"
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Alerts"
-            value={3}
-            subtitle="Active alerts"
-            icon={<WarningIcon />}
-            color="#d32f2f"
-          />
-        </Grid>
-      </Grid>
+      {/* Stats Cards */}
+      <Box sx={{ display: 'flex', gap: 3, mb: 3, flexWrap: 'wrap' }}>
+        <Card sx={{ minWidth: 200, flex: 1 }}>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <ComputerIcon color="primary" sx={{ mr: 1 }} />
+              <Typography color="textSecondary" gutterBottom>
+                VMs Ativas
+              </Typography>
+            </Box>
+            <Typography variant="h5" component="div">
+              {data.activeVMs}
+            </Typography>
+            <Typography variant="body2" color="textSecondary">
+              de {data.totalVMs} total
+            </Typography>
+          </CardContent>
+        </Card>
+
+        <Card sx={{ minWidth: 200, flex: 1 }}>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <PeopleIcon color="secondary" sx={{ mr: 1 }} />
+              <Typography color="textSecondary" gutterBottom>
+                Clientes Ativos
+              </Typography>
+            </Box>
+            <Typography variant="h5" component="div">
+              {data.activeClients}
+            </Typography>
+            <Typography variant="body2" color="textSecondary">
+              de {data.totalClients} total
+            </Typography>
+          </CardContent>
+        </Card>
+
+        <Card sx={{ minWidth: 200, flex: 1 }}>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <CloudIcon color="info" sx={{ mr: 1 }} />
+              <Typography color="textSecondary" gutterBottom>
+                Armazenamento
+              </Typography>
+            </Box>
+            <Typography variant="h5" component="div">
+              {data.diskUsage}%
+            </Typography>
+            <Typography variant="body2" color="textSecondary">
+              em uso
+            </Typography>
+          </CardContent>
+        </Card>
+
+        <Card sx={{ minWidth: 200, flex: 1 }}>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <WarningIcon color="warning" sx={{ mr: 1 }} />
+              <Typography color="textSecondary" gutterBottom>
+                VMs Paradas
+              </Typography>
+            </Box>
+            <Typography variant="h5" component="div">
+              {data.stoppedVMs}
+            </Typography>
+            <Typography variant="body2" color="textSecondary">
+              necessitam atenção
+            </Typography>
+          </CardContent>
+        </Card>
+      </Box>
 
       {/* Resource Usage */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} md={4}>
-          <ResourceUsageCard
-            title="CPU Usage"
-            used={dashboardData.resourceUsage.cpu.used}
-            total={dashboardData.resourceUsage.cpu.total}
-            unit={dashboardData.resourceUsage.cpu.unit}
-          />
-        </Grid>
-        <Grid item xs={12} md={4}>
-          <ResourceUsageCard
-            title="Memory Usage"
-            used={dashboardData.resourceUsage.memory.used}
-            total={dashboardData.resourceUsage.memory.total}
-            unit={dashboardData.resourceUsage.memory.unit}
-          />
-        </Grid>
-        <Grid item xs={12} md={4}>
-          <ResourceUsageCard
-            title="Storage Usage"
-            used={dashboardData.resourceUsage.storage.used}
-            total={dashboardData.resourceUsage.storage.total}
-            unit={dashboardData.resourceUsage.storage.unit}
-          />
-        </Grid>
-      </Grid>
-
-      {/* Charts and Recent Activity */}
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={8}>
-          <Card>
-            <CardContent>
-              <Line data={chartData} options={chartOptions} />
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={4}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" component="div" sx={{ mb: 2 }}>
-                Recent Activity
+      <Box sx={{ display: 'flex', gap: 3, mb: 4, flexWrap: 'wrap' }}>
+        <Card sx={{ flex: 1, minWidth: 300 }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>CPU Global</Typography>
+            <Box sx={{ mb: 1 }}>
+              <Typography variant="body2" color="textSecondary">
+                {data.cpuUsage}% utilizado
               </Typography>
-              <TableContainer>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Action</TableCell>
-                      <TableCell>Time</TableCell>
+            </Box>
+            <LinearProgress variant="determinate" value={data.cpuUsage} sx={{ height: 8, borderRadius: 4 }} />
+          </CardContent>
+        </Card>
+
+        <Card sx={{ flex: 1, minWidth: 300 }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>Memória Global</Typography>
+            <Box sx={{ mb: 1 }}>
+              <Typography variant="body2" color="textSecondary">
+                {data.memoryUsage}% utilizado
+              </Typography>
+            </Box>
+            <LinearProgress variant="determinate" value={data.memoryUsage} sx={{ height: 8, borderRadius: 4 }} />
+          </CardContent>
+        </Card>
+
+        <Card sx={{ flex: 1, minWidth: 300 }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>Disco Global</Typography>
+            <Box sx={{ mb: 1 }}>
+              <Typography variant="body2" color="textSecondary">
+                {data.diskUsage}% utilizado
+              </Typography>
+            </Box>
+            <LinearProgress variant="determinate" value={data.diskUsage} sx={{ height: 8, borderRadius: 4 }} />
+          </CardContent>
+        </Card>
+      </Box>
+
+      <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+        {/* Chart */}
+        <Card sx={{ flex: 2, minWidth: 400 }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              Uso de Recursos
+            </Typography>
+            <Line data={chartData} options={chartOptions} />
+          </CardContent>
+        </Card>
+
+        {/* Recent VMs */}
+        <Card sx={{ flex: 1, minWidth: 300 }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              VMs Recentes
+            </Typography>
+            <TableContainer>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Nome</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>CPU</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {vms.map((vm) => (
+                    <TableRow key={vm.id}>
+                      <TableCell>{vm.name}</TableCell>
+                      <TableCell>
+                        <Typography
+                          variant="body2"
+                          color={`${getStatusColor(vm.status)}.main`}
+                        >
+                          {vm.status}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>{vm.cpu}%</TableCell>
                     </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {dashboardData.recentActivity.slice(0, 5).map((activity) => (
-                      <TableRow key={activity.id}>
-                        <TableCell>
-                          <Typography variant="body2">
-                            {activity.message}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="caption" color="text.secondary">
-                            {new Date(activity.timestamp).toLocaleTimeString()}
-                          </Typography>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </CardContent>
+        </Card>
+      </Box>
     </Box>
   );
 };

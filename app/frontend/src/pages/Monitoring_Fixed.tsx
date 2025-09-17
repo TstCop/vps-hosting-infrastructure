@@ -1,30 +1,30 @@
-import React, { useState } from 'react';
 import {
+    Computer as ComputerIcon,
+    Error as ErrorIcon,
+    Info as InfoIcon,
+    Refresh as RefreshIcon,
+    Timeline as TimelineIcon,
+    Warning as WarningIcon
+} from '@mui/icons-material';
+import {
+    Alert,
     Box,
+    Button,
     Card,
     CardContent,
-    Typography,
-    Button,
-    Alert,
-    LinearProgress,
     Chip,
     IconButton,
+    LinearProgress,
     Paper,
     Table,
     TableBody,
     TableCell,
     TableContainer,
     TableHead,
-    TableRow
+    TableRow,
+    Typography
 } from '@mui/material';
-import {
-    Refresh as RefreshIcon,
-    Timeline as TimelineIcon,
-    Computer as ComputerIcon,
-    Warning as WarningIcon,
-    Error as ErrorIcon,
-    Info as InfoIcon
-} from '@mui/icons-material';
+import React, { useState } from 'react';
 
 interface SystemMetrics {
     cpuUsage: number;
@@ -127,9 +127,9 @@ const Monitoring: React.FC = () => {
                         <Typography variant="h4" gutterBottom>
                             {systemMetrics.cpuUsage}%
                         </Typography>
-                        <LinearProgress 
-                            variant="determinate" 
-                            value={systemMetrics.cpuUsage} 
+                        <LinearProgress
+                            variant="determinate"
+                            value={systemMetrics.cpuUsage}
                             sx={{ height: 8, borderRadius: 4 }}
                         />
                     </CardContent>
@@ -143,9 +143,9 @@ const Monitoring: React.FC = () => {
                         <Typography variant="h4" gutterBottom>
                             {systemMetrics.memoryUsage}%
                         </Typography>
-                        <LinearProgress 
-                            variant="determinate" 
-                            value={systemMetrics.memoryUsage} 
+                        <LinearProgress
+                            variant="determinate"
+                            value={systemMetrics.memoryUsage}
                             sx={{ height: 8, borderRadius: 4 }}
                         />
                     </CardContent>
@@ -159,9 +159,9 @@ const Monitoring: React.FC = () => {
                         <Typography variant="h4" gutterBottom>
                             {systemMetrics.diskUsage}%
                         </Typography>
-                        <LinearProgress 
-                            variant="determinate" 
-                            value={systemMetrics.diskUsage} 
+                        <LinearProgress
+                            variant="determinate"
+                            value={systemMetrics.diskUsage}
                             sx={{ height: 8, borderRadius: 4 }}
                         />
                     </CardContent>
@@ -190,7 +190,7 @@ const Monitoring: React.FC = () => {
                             <WarningIcon />
                             Alertas Recentes
                         </Typography>
-                        
+
                         {alerts.length === 0 ? (
                             <Alert severity="success">
                                 Nenhum alerta ativo no momento
@@ -198,7 +198,7 @@ const Monitoring: React.FC = () => {
                         ) : (
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                                 {alerts.map((alert) => (
-                                    <Alert 
+                                    <Alert
                                         key={alert.id}
                                         severity={alert.type as any}
                                         icon={getAlertIcon(alert.type)}
@@ -227,7 +227,7 @@ const Monitoring: React.FC = () => {
                             <ComputerIcon />
                             Status das VMs
                         </Typography>
-                        
+
                         <Paper>
                             <TableContainer>
                                 <Table size="small">

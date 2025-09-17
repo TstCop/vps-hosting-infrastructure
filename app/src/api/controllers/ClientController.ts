@@ -1,10 +1,58 @@
 import { Request, Response } from 'express';
-import { Client, ApiResponse } from '../../types';
 import { v4 as uuidv4 } from 'uuid';
+import { ApiResponse, Client } from '../../types';
 
 class ClientController {
     private clients: Client[] = [];
 
+    /**
+     * @swagger
+     * /api/clients:
+     *   post:
+     *     summary: Create a new client
+     *     tags: [Clients]
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required:
+     *               - name
+     *               - email
+     *             properties:
+     *               name:
+     *                 type: string
+     *                 description: Client name
+     *               email:
+     *                 type: string
+     *                 format: email
+     *                 description: Client email
+     *               company:
+     *                 type: string
+     *                 description: Client company
+     *               phone:
+     *                 type: string
+     *                 description: Client phone number
+     *     responses:
+     *       201:
+     *         description: Client created successfully
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 success:
+     *                   type: boolean
+     *                 data:
+     *                   $ref: '#/components/schemas/Client'
+     *                 message:
+     *                   type: string
+     *       500:
+     *         description: Internal server error
+     */
     // RF01.1: Create new client
     public createClient = (req: Request, res: Response): void => {
         try {
@@ -17,7 +65,7 @@ class ClientController {
                 updatedAt: new Date()
             };
             this.clients.push(newClient);
-            
+
             const response: ApiResponse<Client> = {
                 success: true,
                 data: newClient,
@@ -33,13 +81,52 @@ class ClientController {
         }
     };
 
+    /**
+     * @swagger
+     * /api/clients/{id}:
+     *   put:
+     *     summary: Update an existing client
+     *     tags: [Clients]
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: Client ID
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             properties:
+     *               name:
+     *                 type: string
+     *               email:
+     *                 type: string
+     *                 format: email
+     *               company:
+     *                 type: string
+     *               phone:
+     *                 type: string
+     *     responses:
+     *       200:
+     *         description: Client updated successfully
+     *       404:
+     *         description: Client not found
+     *       500:
+     *         description: Internal server error
+     */
     // RF01.2: Edit existing client
     public updateClient = (req: Request, res: Response): void => {
         try {
             const clientId = req.params.id;
             const updatedData = req.body;
             const clientIndex = this.clients.findIndex(client => client.id === clientId);
-            
+
             if (clientIndex === -1) {
                 const response: ApiResponse = {
                     success: false,
@@ -48,13 +135,13 @@ class ClientController {
                 res.status(404).json(response);
                 return;
             }
-            
-            this.clients[clientIndex] = { 
-                ...this.clients[clientIndex], 
-                ...updatedData, 
-                updatedAt: new Date() 
+
+            this.clients[clientIndex] = {
+                ...this.clients[clientIndex],
+                ...updatedData,
+                updatedAt: new Date()
             };
-            
+
             const response: ApiResponse<Client> = {
                 success: true,
                 data: this.clients[clientIndex],
@@ -70,6 +157,68 @@ class ClientController {
         }
     };
 
+    /**
+     * @swagger
+     * /api/clients:
+     *   get:
+     *     summary: Get all clients with pagination and filters
+     *     tags: [Clients]
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: query
+     *         name: page
+     *         schema:
+     *           type: integer
+     *           default: 1
+     *         description: Page number
+     *       - in: query
+     *         name: limit
+     *         schema:
+     *           type: integer
+     *           default: 10
+     *         description: Number of items per page
+     *       - in: query
+     *         name: status
+     *         schema:
+     *           type: string
+     *           enum: [active, inactive]
+     *         description: Filter by client status
+     *       - in: query
+     *         name: search
+     *         schema:
+     *           type: string
+     *         description: Search by name, email, or company
+     *     responses:
+     *       200:
+     *         description: List of clients retrieved successfully
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 success:
+     *                   type: boolean
+     *                 data:
+     *                   type: array
+     *                   items:
+     *                     $ref: '#/components/schemas/Client'
+     *                 pagination:
+     *                   type: object
+     *                   properties:
+     *                     currentPage:
+     *                       type: integer
+     *                     totalPages:
+     *                       type: integer
+     *                     totalClients:
+     *                       type: integer
+     *                     hasNext:
+     *                       type: boolean
+     *                     hasPrev:
+     *                       type: boolean
+     *       500:
+     *         description: Internal server error
+     */
     // RF01.3: List clients with pagination
     public getClients = (req: Request, res: Response): void => {
         try {
@@ -88,7 +237,7 @@ class ClientController {
             // Search filter
             if (search) {
                 const searchLower = search.toLowerCase();
-                filteredClients = filteredClients.filter(client => 
+                filteredClients = filteredClients.filter(client =>
                     client.name.toLowerCase().includes(searchLower) ||
                     client.email.toLowerCase().includes(searchLower) ||
                     (client.company && client.company.toLowerCase().includes(searchLower))
@@ -124,7 +273,7 @@ class ClientController {
         try {
             const clientId = req.params.id;
             const client = this.clients.find(client => client.id === clientId);
-            
+
             if (!client) {
                 const response: ApiResponse = {
                     success: false,
@@ -133,7 +282,7 @@ class ClientController {
                 res.status(404).json(response);
                 return;
             }
-            
+
             const response: ApiResponse<Client> = {
                 success: true,
                 data: client
@@ -153,7 +302,7 @@ class ClientController {
         try {
             const clientId = req.params.id;
             const clientIndex = this.clients.findIndex(client => client.id === clientId);
-            
+
             if (clientIndex === -1) {
                 const response: ApiResponse = {
                     success: false,
@@ -162,11 +311,11 @@ class ClientController {
                 res.status(404).json(response);
                 return;
             }
-            
+
             // Instead of deleting, we deactivate
             this.clients[clientIndex].status = 'inactive';
             this.clients[clientIndex].updatedAt = new Date();
-            
+
             const response: ApiResponse = {
                 success: true,
                 message: 'Client deactivated successfully'
@@ -186,7 +335,7 @@ class ClientController {
         try {
             const clientId = req.params.id;
             const client = this.clients.find(client => client.id === clientId);
-            
+
             if (!client) {
                 const response: ApiResponse = {
                     success: false,
@@ -195,7 +344,7 @@ class ClientController {
                 res.status(404).json(response);
                 return;
             }
-            
+
             // Mock history data - in a real implementation, this would come from an audit log
             const history = [
                 {
@@ -213,7 +362,7 @@ class ClientController {
                     performedBy: 'admin'
                 }
             ];
-            
+
             const response: ApiResponse = {
                 success: true,
                 data: history

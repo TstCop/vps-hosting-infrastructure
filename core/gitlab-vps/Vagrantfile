@@ -5,45 +5,61 @@
 # IP Público: 136.243.208.130
 # IP Privado: 10.0.0.10
 
-Vagrant.configure("2") do |config|
+Vagrant.configure('2') do |config|
   # Box configuration
-  config.vm.box = "generic/ubuntu2204"  # Ubuntu 22.04 LTS with libvirt support
-  config.vm.box_check_update = true
+  config.vm.box = 'generic/ubuntu2204'  # Ubuntu 22.04 LTS with libvirt support
+  config.vm.synced_folder ".", "/vagrant", disabled: true
+
+  # Configurações globais de SSH
+  config.ssh.username = 'vagrant'
+  config.ssh.password = 'vagrant'
+  config.ssh.insert_key = true
+  config.ssh.forward_agent = true
+  config.ssh.forward_x11 = true
+
+  # Configurações globais para melhor performance
+  config.vm.box_check_update = false
 
   # VM definition
   config.vm.define "gitlab-vps" do |gitlab|
     gitlab.vm.hostname = "gitlab-vps"
 
     # Network configuration
-    # Private network for internal communication (start with this first)
-    config.vm.network "private_network",
-      ip: "10.0.0.10",
-      netmask: "255.255.255.0"
+    # Rede principal (bridge para cluster interno)
+    gitlab.vm.network 'private_network',
+      libvirt__network_name: 'xcloud-internal',
+      libvirt__dhcp_enabled: false,
+      ip: '192.168.56.104'
 
-    # Public network (bridge mode - let DHCP assign IP first)
-    config.vm.network "public_network",
-      bridge: "enp35s0"
+    # Rede privada interna (para serviços auxiliares)
+    gitlab.vm.network 'private_network',
+      libvirt__network_name: 'xcloud-private',
+      libvirt__dhcp_enabled: false,
+      ip: '10.0.0.10'
 
-    # Port forwarding for development/testing
-    config.vm.network "forwarded_port", guest: 80, host: 8080, auto_correct: true
-    gitlab.vm.network "forwarded_port", guest: 443, host: 8443, auto_correct: true
-    gitlab.vm.network "forwarded_port", guest: 22, host: 2222, auto_correct: true
+    # Configuração para IP público (documentação/planejamento)
+    puts "INFO: gitlab-vps será mapeado para IP público 136.243.208.130"
 
-    # Provider-specific configuration
-    gitlab.vm.provider "libvirt" do |lv|
-      lv.memory = 4096           # 4GB RAM for GitLab
-      lv.cpus = 2                # 2+ CPUs
-      lv.storage :file,
+    # Public network (bridge mode) - Commented out for testing
+    # gitlab.vm.network "public_network",
+    #   dev: "br0",
+    #   mode: "bridge"
+
+    # Configuração otimizada do provider Libvirt
+    gitlab.vm.provider 'libvirt' do |libvirt|
+      libvirt.memory = 4096           # 4GB RAM for GitLab
+      libvirt.cpus = 2                # 2+ CPUs
+      libvirt.cpu_mode = 'host-passthrough'
+      libvirt.disk_bus = 'virtio'
+      libvirt.nic_model_type = 'virtio'
+      libvirt.memorybacking :access, mode: 'shared'
+      libvirt.storage :file,
         size: "100G",            # 100GB+ Storage
         type: "qcow2"
-      lv.machine_virtual_size = 100  # Virtual disk size
-      lv.disk_bus = "virtio"
-      lv.disk_driver :cache => "none"  # Fixed deprecated volume_cache
-      lv.nic_model_type = "virtio"
-      lv.video_type = "qxl"
-      lv.cpu_mode = "host-passthrough"
-      lv.nested = true
-      lv.driver = "kvm"
+      libvirt.machine_virtual_size = 100  # Virtual disk size
+      libvirt.video_type = "qxl"
+      libvirt.nested = true
+      libvirt.driver = "kvm"
     end
 
     # Synced folders
@@ -51,6 +67,48 @@ Vagrant.configure("2") do |config|
       rsync__args: ["--verbose", "--archive", "--delete", "-z"]
     gitlab.vm.synced_folder "./scripts", "/vagrant/scripts", type: "rsync",
       rsync__args: ["--verbose", "--archive", "--delete", "-z"]
+
+    # Provisionamento básico com configuração de DNS
+    gitlab.vm.provision 'shell', name: "Basic System Setup", run: 'once', inline: <<-SHELL
+      echo "🔧 Configurando GitLab VPS..."
+
+      # Configurar APT para não fazer atualizações automáticas
+      systemctl mask --now apt-daily.service apt-daily-upgrade.service
+      systemctl stop unattended-upgrades 2>/dev/null || true
+
+      # Atualizar apenas pacotes essenciais
+      apt-get update -qq 2>/dev/null
+      DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        curl ca-certificates jq net-tools tzdata dnsutils 2>/dev/null
+
+      # Configurar timezone
+      ln -sf /usr/share/zoneinfo/America/Sao_Paulo /etc/localtime
+
+      # Configurar DNS interno para resolução .xcloud.intra
+      echo "nameserver 10.0.0.40" >> /etc/resolvconf/resolv.conf.d/head || true
+      echo "search xcloud.intra" >> /etc/resolvconf/resolv.conf.d/head || true
+
+      # Configurar hosts para desenvolvimento
+      cat >> /etc/hosts << EOF
+# XCloud Internal Services
+10.0.0.10 gitlab.xcloud.intra gitlab-vps.xcloud.intra
+10.0.0.11 k8s-master-2.xcloud.intra
+10.0.0.12 k8s-master-3.xcloud.intra
+10.0.0.20 ingress.xcloud.intra
+10.0.0.30 services.xcloud.intra
+10.0.0.40 dns.xcloud.intra
+192.168.56.100 gateway.xcloud.intra
+192.168.56.101 loadbalancer.xcloud.intra
+192.168.56.102 api-gateway.xcloud.intra
+192.168.56.103 web-frontend.xcloud.intra
+EOF
+
+      # Limpar cache
+      apt-get clean
+      rm -rf /var/lib/apt/lists/*
+
+      echo "✅ Sistema básico configurado!"
+    SHELL
 
     # Provisioning scripts execution order
     gitlab.vm.provision "shell", name: "Update System", inline: <<-SHELL
@@ -87,6 +145,7 @@ Vagrant.configure("2") do |config|
     🌐 URLs de Acesso:
     - GitLab Web: https://136.243.208.130
     - GitLab Web (Dev): http://localhost:8080
+    - GitLab Web (Internal): https://gitlab.xcloud.intra
     - GitLab SSH: git@136.243.208.130:2222
 
     🔐 Credenciais:
@@ -95,23 +154,24 @@ Vagrant.configure("2") do |config|
 
     📊 Recursos:
     - RAM: 4GB
-    - CPU: 2 cores
+    - CPU: 2 cores (host-passthrough)
     - Storage: 100GB
     - IP Público: 136.243.208.130
     - IP Privado: 10.0.0.10
+    - IP Cluster: 192.168.56.104
 
     🔧 Comandos úteis:
     vagrant ssh gitlab-vps
     sudo gitlab-ctl status
     sudo gitlab-ctl tail
+
+    🌐 Integração XCloud:
+    - DNS interno: gitlab.xcloud.intra
+    - Rede interna: xcloud-internal (192.168.56.0/24)
+    - Rede privada: xcloud-private (10.0.0.0/24)
     ===============================================
     MSG
   end
-
-  # Global configurations
-  config.ssh.forward_agent = true
-  config.ssh.forward_x11 = true
-  config.ssh.insert_key = false
 
   # Vagrant plugins requirements
   config.vagrant.plugins = ["vagrant-libvirt", "vagrant-hostmanager"]

@@ -1,14 +1,15 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import { Box } from '@mui/material';
-import Sidebar from './components/Layout/Sidebar';
+import CssBaseline from '@mui/material/CssBaseline';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import Header from './components/Layout/Header';
-import Dashboard from './pages/Dashboard';
+import Sidebar from './components/Layout/Sidebar';
 import ClientsPage from './pages/Clients';
-import VMsPage from './pages/VMs';
-import TemplatesPage from './pages/Templates';
+import Dashboard from './pages/Dashboard';
+import LogsPage from './pages/Logs';
 import MonitoringPage from './pages/Monitoring';
+import TemplatesPage from './pages/Templates';
+import VMsPage from './pages/VMs';
 
 const theme = createTheme({
   palette: {
@@ -34,11 +35,11 @@ function App() {
           <Sidebar />
           <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
             <Header />
-            <Box 
-              component="main" 
-              sx={{ 
-                flexGrow: 1, 
-                p: 3, 
+            <Box
+              component="main"
+              sx={{
+                flexGrow: 1,
+                p: 3,
                 backgroundColor: 'background.default',
                 overflow: 'auto'
               }}
@@ -49,6 +50,7 @@ function App() {
                 <Route path="/vms" element={<VMsPage />} />
                 <Route path="/templates" element={<TemplatesPage />} />
                 <Route path="/monitoring" element={<MonitoringPage />} />
+                <Route path="/logs" element={<LogsPage />} />
               </Routes>
             </Box>
           </Box>
