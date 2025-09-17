@@ -3,9 +3,15 @@ import cors from 'cors';
 import express, { NextFunction, Request, Response } from 'express';
 import { specs, swaggerUi } from '../config/swagger';
 import { authMiddleware } from './middleware/auth';
+import authRoutes from './routes/auth';
 import clientRoutes from './routes/clients';
 import configRoutes from './routes/configs';
+import filesRoutes from './routes/files';
+import logsRoutes from './routes/logs';
 import monitoringRoutes from './routes/monitoring';
+import searchRoutes from './routes/search';
+import statsRoutes from './routes/stats';
+import systemRoutes from './routes/system';
 import templateRoutes from './routes/templates';
 import vmRoutes from './routes/vms';
 
@@ -31,11 +37,17 @@ if (process.env.NODE_ENV !== 'test') {
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 
 // Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/clients', clientRoutes);
-app.use('/api/vms', vmRoutes);
-app.use('/api/templates', templateRoutes);
 app.use('/api/configs', configRoutes);
+app.use('/api/files', filesRoutes);
+app.use('/api/logs', logsRoutes);
 app.use('/api/monitoring', monitoringRoutes);
+app.use('/api/search', searchRoutes);
+app.use('/api/stats', statsRoutes);
+app.use('/api/system', systemRoutes);
+app.use('/api/templates', templateRoutes);
+app.use('/api/vms', vmRoutes);
 
 // RF04.2: VM metrics route (specific to VMs)
 import MonitoringController from './controllers/MonitoringController';

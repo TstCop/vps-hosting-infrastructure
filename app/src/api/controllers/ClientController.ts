@@ -376,6 +376,52 @@ class ClientController {
             res.status(500).json(response);
         }
     };
+
+    getClientVMs = async (req: Request, res: Response) => {
+        try {
+            const { id } = req.params;
+
+            const client = this.clients.find(c => c.id === id);
+            if (!client) {
+                const response: ApiResponse = {
+                    success: false,
+                    error: 'Client not found'
+                };
+                res.status(404).json(response);
+                return;
+            }
+
+            // Mock VMs for the client - in production this would query the VM database
+            const clientVMs = [
+                {
+                    id: 'vm-1',
+                    name: 'nginx-app-01',
+                    status: 'running',
+                    template: 'Ubuntu 22.04',
+                    createdAt: '2024-12-14T10:00:00Z'
+                },
+                {
+                    id: 'vm-2',
+                    name: 'database-01',
+                    status: 'running',
+                    template: 'PostgreSQL',
+                    createdAt: '2024-12-10T08:30:00Z'
+                }
+            ];
+
+            const response: ApiResponse = {
+                success: true,
+                data: clientVMs
+            };
+            res.status(200).json(response);
+        } catch (error) {
+            const response: ApiResponse = {
+                success: false,
+                error: 'Failed to retrieve client VMs'
+            };
+            res.status(500).json(response);
+        }
+    };
 }
 
 export default ClientController;
